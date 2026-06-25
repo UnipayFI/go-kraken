@@ -6,9 +6,9 @@
 
 A Go SDK for the [Kraken](https://docs.kraken.com/api/) spot exchange, covering the full Spot REST API.
 
-| API | Base | Aligned to |
-|---|---|---|
-| **Spot REST** | `https://api.kraken.com/0` | [2026-06-25](https://docs.kraken.com/api/docs/rest-api/) |
+| API | Aligned to |
+|---|---|
+| **Spot REST&Websocket**  | [2026-06-22](https://docs.kraken.com/exchange/changelog) |
 
 Response structs are reconciled against the live API (not just the docs): every endpoint is tested by diffing the real JSON keys against the struct, so they stay in sync with the date above.
 
