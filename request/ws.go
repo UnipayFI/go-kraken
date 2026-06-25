@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"runtime/debug"
 	"sync/atomic"
 	"time"
 
@@ -20,12 +21,21 @@ type WsClient interface {
 	Token(ctx context.Context) (string, error)
 }
 
+// WsPushType classifies a channel data frame: a full snapshot or an incremental
+// update.
+type WsPushType string
+
+const (
+	WsPushTypeSnapshot WsPushType = "snapshot" // full state
+	WsPushTypeUpdate   WsPushType = "update"   // incremental change
+)
+
 // WsPush is the envelope Kraken pushes for a channel data event. Type is
-// "snapshot" (full) or "update" (incremental).
+// WsPushTypeSnapshot (full) or WsPushTypeUpdate (incremental).
 type WsPush[T any] struct {
-	Channel string `json:"channel"`
-	Type    string `json:"type"`
-	Data    T      `json:"data"`
+	Channel string     `json:"channel"`
+	Type    WsPushType `json:"type"`
+	Data    T          `json:"data"`
 }
 
 // wsRequest is a Kraken v2 control frame (subscribe/unsubscribe/ping/...).
@@ -109,6 +119,20 @@ func subscribeBytes(ctx context.Context, c WsClient, channel string, params map[
 	stopC := make(chan struct{})
 	silent := false
 
+	// deliver invokes the consumer callback with panic isolation. The callback
+	// runs on the reader goroutine below, so an unrecovered panic in it would
+	// take down the whole host process and abandon the connection. Recover it
+	// into a logged, dropped frame instead, keeping the reader loop alive.
+	logger := c.GetLogger()
+	deliver := func(message []byte, e error) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Errorf("ws %s: callback panicked, frame dropped: %v\n%s", channel, r, debug.Stack())
+			}
+		}()
+		cb(message, e)
+	}
+
 	go wsKeepAlive(conn, common.DEFAULT_WS_PING_INTERVAL)
 	go func() {
 		select {
@@ -128,7 +152,7 @@ func subscribeBytes(ctx context.Context, c WsClient, channel string, params map[
 			_, message, err := conn.ReadMessage()
 			if err != nil {
 				if !silent {
-					cb(nil, err)
+					deliver(nil, err)
 				}
 				close(stopC)
 				return
@@ -137,21 +161,21 @@ func subscribeBytes(ctx context.Context, c WsClient, channel string, params map[
 
 			var hdr wsHeader
 			if err := common.JSONUnmarshal(message, &hdr); err != nil {
-				cb(nil, err)
+				deliver(nil, err)
 				continue
 			}
 			switch {
 			case hdr.Method == "subscribe":
 				// Subscription acknowledgement: surface a failure, ignore success.
 				if hdr.Success != nil && !*hdr.Success {
-					cb(nil, &WsError{Message: subErr(hdr)})
+					deliver(nil, &WsError{Message: subErr(hdr)})
 				}
 			case hdr.Method != "":
 				// pong / unsubscribe ack / other control frames: ignore.
 			case hdr.Error != "":
-				cb(nil, &WsError{Message: hdr.Error})
+				deliver(nil, &WsError{Message: hdr.Error})
 			case hdr.Channel == channel && hdr.Type != "":
-				cb(message, nil)
+				deliver(message, nil)
 			default:
 				// heartbeat, status, and other channels' frames: ignore.
 			}

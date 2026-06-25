@@ -93,7 +93,11 @@ func (s *AddOrderService) SetUserRef(userRef int) *AddOrderService {
 	return s
 }
 
-// SetClientOrderID sets a client order id (UUID or free text up to 18 chars).
+// SetClientOrderID sets a client order id. Kraken accepts one of three forms
+// (see MaxClOrdIDLen / ValidateClOrdID): up to 18 lowercase alphanumerics, a
+// standard UUID, or a 32-character hex string. It is not validated here; an
+// unacceptable value is rejected by the server with
+// "EGeneral:Invalid arguments:cl_ord_id".
 func (s *AddOrderService) SetClientOrderID(clOrdID string) *AddOrderService {
 	s.params["cl_ord_id"] = clOrdID
 	return s

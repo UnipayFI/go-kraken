@@ -10,10 +10,19 @@ import (
 var _ request.WsClient = (*WebSocketClient)(nil)
 
 // WsPush is the channel data envelope Kraken pushes ({channel, type, data}). Type
-// is "snapshot" (full) or "update" (incremental). It is re-exported from the
-// request package for convenience: a callback receives *kraken.WsPush[[]WsTicker]
-// and similar.
+// is WsPushTypeSnapshot (full) or WsPushTypeUpdate (incremental). It is
+// re-exported from the request package for convenience: a callback receives
+// *kraken.WsPush[[]WsTicker] and similar.
 type WsPush[T any] = request.WsPush[T]
+
+// WsPushType classifies a channel data frame as a full snapshot or an
+// incremental update. Re-exported from the request package.
+type WsPushType = request.WsPushType
+
+const (
+	WsPushTypeSnapshot = request.WsPushTypeSnapshot // full snapshot frame
+	WsPushTypeUpdate   = request.WsPushTypeUpdate   // incremental update frame
+)
 
 // WebSocketClient streams Kraken's v2 public and private channels and supports
 // WebSocket order entry. Public channels need no credentials; private channels

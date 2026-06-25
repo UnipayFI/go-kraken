@@ -65,7 +65,7 @@ type WsAddOrder struct {
 	Margin        bool            // fund on margin
 	Validate      bool            // validate only, do not submit
 	DisplayQty    decimal.Decimal // iceberg display quantity (omitted if zero)
-	ClientOrderID string          // client order id
+	ClientOrderID string          // client order id (see MaxClOrdIDLen / ValidateClOrdID)
 	OrderUserRef  int             // numeric client reference (omitted if zero)
 	FeePreference string          // "base" or "quote"
 	StpType       string          // self-trade prevention
