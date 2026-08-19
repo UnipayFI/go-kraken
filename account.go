@@ -450,6 +450,25 @@ func (s *GetTradesHistoryService) SetLedgers(ledgers bool) *GetTradesHistoryServ
 	return s
 }
 
+// SetAssetClass sets the asset class of the pair filter (default forex; also
+// equity_pair, futures_contract, synthetic_pair, external_pair).
+func (s *GetTradesHistoryService) SetAssetClass(aclass string) *GetTradesHistoryService {
+	s.params["aclass"] = aclass
+	return s
+}
+
+// SetPair filters results to a single trading pair.
+func (s *GetTradesHistoryService) SetPair(pair string) *GetTradesHistoryService {
+	s.params["pair"] = pair
+	return s
+}
+
+// SetLimit sets the number of trades returned per page (1-100, default 50).
+func (s *GetTradesHistoryService) SetLimit(limit int) *GetTradesHistoryService {
+	s.params["limit"] = formatInt(limit)
+	return s
+}
+
 func (s *GetTradesHistoryService) Do(ctx context.Context) (*TradesHistoryResult, error) {
 	return request.Do[TradesHistoryResult](request.Post(ctx, s.c, "/0/private/TradesHistory", s.params).WithSign())
 }

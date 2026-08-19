@@ -122,6 +122,29 @@ func TestAccountData(t *testing.T) {
 		apitest.AssertCovers(t, "TradesHistory", raw, resp)
 		t.Logf("TradesHistory: count=%d", resp.Count)
 		pace()
+
+		// pair/aclass/limit filters (2026-07-14).
+		params := map[string]string{"pair": "XXBTZUSD", "aclass": "forex", "limit": "1"}
+		raw = apitest.FetchRawPost(t, c, ctx, "/0/private/TradesHistory", params)
+		filtered, err := c.NewGetTradesHistoryService().
+			SetPair("XXBTZUSD").
+			SetAssetClass("forex").
+			SetLimit(1).
+			Do(ctx)
+		if err != nil {
+			t.Fatalf("TradesHistory(filtered): %v", err)
+		}
+		apitest.AssertCovers(t, "TradesHistory(filtered)", raw, filtered)
+		if len(filtered.Trades) > 1 {
+			t.Errorf("TradesHistory(filtered): limit=1 returned %d trades", len(filtered.Trades))
+		}
+		for txid, tr := range filtered.Trades {
+			if tr.Pair != "XXBTZUSD" {
+				t.Errorf("TradesHistory(filtered): %s pair=%q, want XXBTZUSD", txid, tr.Pair)
+			}
+		}
+		t.Logf("TradesHistory(filtered): %d trade(s)", len(filtered.Trades))
+		pace()
 	}
 
 	// 9. Query Trades Info (path+signing now; deep field check in trade test).
