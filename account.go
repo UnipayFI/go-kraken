@@ -18,15 +18,23 @@ import (
 // GetAccountBalanceService returns all cash balances, net of pending withdrawals,
 // keyed by Kraken asset name.
 type GetAccountBalanceService struct {
-	c *Client
+	c      *Client
+	params map[string]string
 }
 
 func (c *Client) NewGetAccountBalanceService() *GetAccountBalanceService {
-	return &GetAccountBalanceService{c: c}
+	return &GetAccountBalanceService{c: c, params: map[string]string{}}
+}
+
+// SetAccountID selects the wallet account to report on by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetAccountBalanceService) SetAccountID(accountID string) *GetAccountBalanceService {
+	s.params["account_id"] = accountID
+	return s
 }
 
 func (s *GetAccountBalanceService) Do(ctx context.Context) (map[string]decimal.Decimal, error) {
-	resp, err := request.Do[map[string]decimal.Decimal](request.Post(ctx, s.c, "/0/private/Balance").WithSign())
+	resp, err := request.Do[map[string]decimal.Decimal](request.Post(ctx, s.c, "/0/private/Balance", s.params).WithSign())
 	if err != nil {
 		return nil, err
 	}
@@ -582,6 +590,14 @@ type GetLedgersService struct {
 
 func (c *Client) NewGetLedgersService() *GetLedgersService {
 	return &GetLedgersService{c: c, params: map[string]string{}}
+}
+
+// SetAccountID selects the wallet account to read ledgers from by its public id
+// (see ListWalletAccountsService). Omit to use the authenticated user's default
+// wallet.
+func (s *GetLedgersService) SetAccountID(accountID string) *GetLedgersService {
+	s.params["account_id"] = accountID
+	return s
 }
 
 // SetAsset filters by asset(s) (comma-separated, default all).
