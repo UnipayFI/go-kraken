@@ -993,3 +993,71 @@ type APIKeyInfo struct {
 	QueryTo      time.Time `json:"query_to"`      // end of the key's allowed query window
 	ValidUntil   time.Time `json:"valid_until"`   // key expiry (zero = no expiry)
 }
+
+// ===========================================================================
+// 20. List Wallet Accounts -- POST /0/private/ListWalletAccounts
+// ===========================================================================
+
+// ListWalletAccountsService returns the wallet accounts linked to the
+// authenticated user. The returned account ids are what GetAccountBalanceService
+// and GetLedgersService accept via SetAccountID.
+type ListWalletAccountsService struct {
+	c *Client
+}
+
+func (c *Client) NewListWalletAccountsService() *ListWalletAccountsService {
+	return &ListWalletAccountsService{c: c}
+}
+
+func (s *ListWalletAccountsService) Do(ctx context.Context) (*WalletAccounts, error) {
+	return request.Do[WalletAccounts](request.Post(ctx, s.c, "/0/private/ListWalletAccounts").WithSign())
+}
+
+// WalletAccounts is a page of wallet accounts. Kraken returns a forward cursor
+// but does not (yet) document a request parameter to consume it.
+type WalletAccounts struct {
+	Accounts []WalletAccount `json:"accounts"` // the user's wallet accounts
+	Cursor   WalletCursor    `json:"cursor"`   // pagination cursor
+}
+
+// WalletCursor points at the next page of wallet accounts.
+type WalletCursor struct {
+	Next string `json:"next"` // opaque cursor, empty when there are no more pages
+}
+
+// WalletAccount is one wallet account linked to the user.
+type WalletAccount struct {
+	AccountID string             `json:"account_id"` // public wallet account id
+	Flags     WalletAccountFlags `json:"flags"`      // wallet lifecycle flags
+	Status    WalletStatus       `json:"status"`     // wallet lifecycle status
+	Type      WalletType         `json:"type"`       // account type
+	Name      string             `json:"name"`       // display name (empty when unnamed)
+}
+
+// WalletAccountFlags describes how a wallet was created and whether it is live.
+type WalletAccountFlags struct {
+	UserDefined bool `json:"user_defined"` // whether the wallet was created by the user
+	Active      bool `json:"active"`       // whether the wallet is currently active
+}
+
+// WalletStatus is a wallet account's lifecycle status.
+type WalletStatus string
+
+const (
+	WalletStatusActive   WalletStatus = "active"
+	WalletStatusDisabled WalletStatus = "disabled"
+	WalletStatusClosed   WalletStatus = "closed"
+	WalletStatusUnknown  WalletStatus = "unknown"
+)
+
+// WalletType is the kind of wallet account.
+type WalletType string
+
+const (
+	WalletTypeMain      WalletType = "main"
+	WalletTypeSpot      WalletType = "spot"
+	WalletTypePay       WalletType = "pay"
+	WalletTypePropPaper WalletType = "prop_paper"
+	WalletTypePropReal  WalletType = "prop_real"
+	WalletTypeUnknown   WalletType = "unknown"
+)

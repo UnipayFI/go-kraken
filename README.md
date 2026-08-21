@@ -141,7 +141,7 @@ Public channels: `ticker`, `book`, `ohlc`, `trade`, `instrument`. Private channe
 | Area | File | Endpoints |
 |------|------|-----------|
 | Market data | `market.go` | Time, SystemStatus, Assets, AssetPairs, Ticker, OHLC, Depth (order book), Trades, Spread, GroupedBook, Level3 (authenticated) |
-| Account data | `account.go` | Balance, BalanceEx, TradeBalance, Open/Closed/Query Orders, OrderAmends, Trades History, Query Trades, Open Positions, Ledgers, Query Ledgers, Trade Volume, export reports (Add/Status/Retrieve/Remove), CreditLines, GetApiKeyInfo |
+| Account data | `account.go` | Balance, BalanceEx, TradeBalance, Open/Closed/Query Orders, OrderAmends, Trades History, Query Trades, Open Positions, Ledgers, Query Ledgers, Trade Volume, export reports (Add/Status/Retrieve/Remove), CreditLines, GetApiKeyInfo, ListWalletAccounts |
 | Trading | `trade.go` | AddOrder, AddOrderBatch, AmendOrder, EditOrder, CancelOrder, CancelAll, CancelAllOrdersAfter, CancelOrderBatch |
 | Funding | `funding.go` | Deposit Methods/Addresses/Status, Withdraw Methods/Addresses/Info, Withdraw, Withdraw Status/Cancel, WalletTransfer |
 | Subaccounts | `subaccount.go` | CreateSubaccount, AccountTransfer (institutional) |
