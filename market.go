@@ -106,8 +106,51 @@ func (s *GetSystemStatusService) Do(ctx context.Context) (*SystemStatus, error) 
 
 // SystemStatus is the GET /0/public/SystemStatus payload.
 type SystemStatus struct {
-	Status    string    `json:"status"`    // online | maintenance | cancel_only | post_only
-	Timestamp time.Time `json:"timestamp"` // RFC3339 time the status was last updated
+	Status              string              `json:"status"`               // online | maintenance | cancel_only | post_only
+	Timestamp           time.Time           `json:"timestamp"`            // RFC3339 time the status was last updated
+	UpcomingMaintenance []MaintenanceEvent  `json:"upcoming_maintenance"` // scheduled events within the next 72h, earliest first; empty or absent when no advisory is active
+	Emergency           []EmergencyAdvisory `json:"emergency"`            // unresolved incidents; empty or absent when no advisory is active
+}
+
+// MaintenanceEvent is one scheduled-maintenance advisory, shared by
+// SystemStatus.UpcomingMaintenance and MaintenanceSchedule.Events. Advisories
+// are additive: SystemStatus.Status keeps being driven by the trading engine,
+// an advisory only explains why a state is happening or coming.
+type MaintenanceEvent struct {
+	EventID           int64     `json:"event_id"`           // event identifier, stable across phase transitions
+	Title             string    `json:"title"`              // human-readable title from the status page
+	ExpectedStartUTC  time.Time `json:"expected_start_utc"` // maintenance window start
+	ExpectedEndUTC    time.Time `json:"expected_end_utc"`   // maintenance window end
+	TimeToStartSec    int64     `json:"time_to_start_s"`    // time until the window starts (seconds), evaluated when the response is served; responses are cacheable, so derive live countdowns from ExpectedStartUTC instead
+	Phase             string    `json:"phase"`              // announced | reminder_24h | approaching_30m | imminent_5m | final_warning_30s, derived from the time remaining
+	AffectedServices  []string  `json:"affected_services"`  // spot_ws, spot_rest, spot_fix, spot_trading, futures_ws, futures_rest, futures_fix, futures_trading, all
+	OrderSubmission   string    `json:"order_submission"`   // allowed | discouraged | blocked
+	RecommendedAction string    `json:"recommended_action"` // continue | reduce_activity | cancel_open_orders | stop_new_orders
+	CancelBeforeUTC   time.Time `json:"cancel_before_utc"`  // ExpectedStartUTC minus 5 minutes while the event is scheduled, zero otherwise
+	SourceURL         string    `json:"source_url"`         // status page permalink
+}
+
+// EmergencyAdvisory is one unresolved-incident advisory from
+// SystemStatus.Emergency. It relays the status page incident state 1:1 and is
+// cleared once the incident resolves. It carries no order guidance -- derive
+// that from IncidentStatus, NextSteps and SystemStatus.Status.
+type EmergencyAdvisory struct {
+	EventID          int64              `json:"event_id"`          // incident identifier
+	Title            string             `json:"title"`             // human-readable title from the status page
+	IncidentStatus   string             `json:"incident_status"`   // investigating | identified | monitoring
+	Impact           string             `json:"impact"`            // none | minor | major | critical
+	AffectedServices []string           `json:"affected_services"` // affected surfaces, same tokens as MaintenanceEvent.AffectedServices
+	StartedAtUTC     time.Time          `json:"started_at_utc"`    // incident start
+	NextSteps        []AdvisoryNextStep `json:"next_steps"`        // forecast actions, earliest first; empty when no forecast has been published
+	SourceURL        string             `json:"source_url"`        // status page permalink
+}
+
+// AdvisoryNextStep is one forecast operational action in
+// EmergencyAdvisory.NextSteps.
+type AdvisoryNextStep struct {
+	AppliesTo     []string  `json:"applies_to"`      // affected surfaces this step applies to
+	Type          string    `json:"type"`            // expected_restart | expected_cancel_only | expected_post_only | expected_online
+	ExpectedAtUTC time.Time `json:"expected_at_utc"` // forecast time for the action
 }
 
 // ===========================================================================
