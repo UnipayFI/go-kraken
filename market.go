@@ -781,3 +781,27 @@ type L3Entry struct {
 	Qty       decimal.Decimal `json:"qty"`       // remaining quantity
 	Timestamp NanoTime        `json:"timestamp"` // order timestamp (UNIX nanoseconds)
 }
+
+// ===========================================================================
+// 12. Get Maintenance Schedule -- GET /0/public/MaintenanceSchedule
+// ===========================================================================
+
+// GetMaintenanceScheduleService returns all scheduled maintenance in the next
+// 7 days. Emergency incidents are not scheduled and never appear here; read
+// SystemStatus.Emergency for those.
+type GetMaintenanceScheduleService struct {
+	c *Client
+}
+
+func (c *Client) NewGetMaintenanceScheduleService() *GetMaintenanceScheduleService {
+	return &GetMaintenanceScheduleService{c: c}
+}
+
+func (s *GetMaintenanceScheduleService) Do(ctx context.Context) (*MaintenanceSchedule, error) {
+	return request.Do[MaintenanceSchedule](request.Get(ctx, s.c, "/0/public/MaintenanceSchedule"))
+}
+
+// MaintenanceSchedule is the GET /0/public/MaintenanceSchedule payload.
+type MaintenanceSchedule struct {
+	Events []MaintenanceEvent `json:"events"` // scheduled maintenance in the next 7 days, earliest first; absent when nothing is scheduled
+}

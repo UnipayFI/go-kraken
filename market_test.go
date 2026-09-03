@@ -165,4 +165,19 @@ func TestMarketData(t *testing.T) {
 			t.Errorf("GroupedBook empty/zero asks: %+v", resp)
 		}
 	}
+
+	// 12. Get Maintenance Schedule (events is absent when nothing is scheduled).
+	{
+		raw := apitest.FetchRawGet(t, c, ctx, "/0/public/MaintenanceSchedule", nil)
+		resp, err := c.NewGetMaintenanceScheduleService().Do(ctx)
+		if err != nil {
+			t.Fatalf("MaintenanceSchedule: %v", err)
+		}
+		apitest.AssertCovers(t, "MaintenanceSchedule", raw, resp)
+		for _, ev := range resp.Events {
+			if ev.EventID == 0 || ev.ExpectedStartUTC.IsZero() || ev.Phase == "" {
+				t.Errorf("MaintenanceSchedule event has zero fields: %+v", ev)
+			}
+		}
+	}
 }
