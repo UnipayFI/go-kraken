@@ -703,6 +703,13 @@ func (s *GetTradeVolumeService) SetPair(pairs ...string) *GetTradeVolumeService 
 	return s
 }
 
+// SetFeeSchedule additionally returns the full fee schedule of every trading
+// pair in the Schedules field.
+func (s *GetTradeVolumeService) SetFeeSchedule(feeSchedule bool) *GetTradeVolumeService {
+	s.params["fee_schedule"] = formatBool(feeSchedule)
+	return s
+}
+
 func (s *GetTradeVolumeService) Do(ctx context.Context) (*TradeVolume, error) {
 	return request.Do[TradeVolume](request.Post(ctx, s.c, "/0/private/TradeVolume", s.params).WithSign())
 }
@@ -715,6 +722,7 @@ type TradeVolume struct {
 	FeesMaker  map[string]FeeInfo `json:"fees_maker"`  // maker fee schedule per pair (if pair given)
 	AssetClass string             `json:"asset_class"` // asset class of the volume
 	Inputs     TradeVolumeInputs  `json:"inputs"`      // inputs used to compute the discount volume
+	Schedules  []FeeSchedule      `json:"schedules"`   // full fee schedule per pair (only with SetFeeSchedule(true))
 }
 
 // FeeInfo is the fee schedule for one pair.
@@ -725,6 +733,23 @@ type FeeInfo struct {
 	NextFee    decimal.Decimal `json:"nextfee"`    // next-tier fee (percent, if not fixed)
 	TierVolume decimal.Decimal `json:"tiervolume"` // volume level of current tier
 	NextVolume decimal.Decimal `json:"nextvolume"` // volume level of next tier
+}
+
+// FeeSchedule is the full fee schedule of one trading pair.
+type FeeSchedule struct {
+	Pair  string            `json:"pair"`  // trading pair the schedule applies to
+	Class string            `json:"class"` // currency | forex | equity | equity_pair | nft | derivatives | tokenized_asset | futures_contract | volume
+	Tiers []FeeScheduleTier `json:"tiers"` // tiers of the schedule, cheapest tier last
+}
+
+// FeeScheduleTier is one tier of a FeeSchedule.
+type FeeScheduleTier struct {
+	MakerFee            decimal.Decimal `json:"maker_fee"`              // maker fee (percent) at this tier
+	TakerFee            decimal.Decimal `json:"taker_fee"`              // taker fee (percent) at this tier
+	MinSpotVolume       decimal.Decimal `json:"min_spot_volume"`        // minimum spot volume for this tier (if applicable)
+	MinFuturesVolume    decimal.Decimal `json:"min_futures_volume"`     // minimum 30-day futures volume for this tier (if applicable)
+	MinAssetsOnPlatform decimal.Decimal `json:"min_assets_on_platform"` // minimum assets on platform for this tier (if applicable)
+	Active              bool            `json:"active"`                 // whether this is the account's current tier
 }
 
 // TradeVolumeInputs are the volume inputs used to compute the fee tier.

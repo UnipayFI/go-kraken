@@ -210,13 +210,18 @@ func TestAccountData(t *testing.T) {
 
 	// 13. Get Trade Volume.
 	{
-		params := map[string]string{"pair": "XBTUSD"}
+		params := map[string]string{"pair": "XBTUSD", "fee_schedule": "true"}
 		raw := apitest.FetchRawPost(t, c, ctx, "/0/private/TradeVolume", params)
-		resp, err := c.NewGetTradeVolumeService().SetPair("XBTUSD").Do(ctx)
+		resp, err := c.NewGetTradeVolumeService().SetPair("XBTUSD").SetFeeSchedule(true).Do(ctx)
 		if err != nil {
 			t.Fatalf("TradeVolume: %v", err)
 		}
 		apitest.AssertCovers(t, "TradeVolume", raw, resp)
+		if len(resp.Schedules) == 0 {
+			t.Errorf("TradeVolume returned no fee schedules with fee_schedule=true")
+		} else if sch := resp.Schedules[0]; sch.Pair == "" || len(sch.Tiers) == 0 {
+			t.Errorf("TradeVolume fee schedule invalid: %+v", sch)
+		}
 		pace()
 	}
 
