@@ -209,8 +209,10 @@ type AssetPairsInfo string
 const (
 	AssetPairsInfoAll      AssetPairsInfo = "info"
 	AssetPairsInfoLeverage AssetPairsInfo = "leverage"
-	AssetPairsInfoFees     AssetPairsInfo = "fees"
-	AssetPairsInfoMargin   AssetPairsInfo = "margin"
+	// AssetPairsInfoFees is still accepted, but the fee arrays it selects have
+	// carried no data since 2026-09-08; use GetTradeVolume instead.
+	AssetPairsInfoFees   AssetPairsInfo = "fees"
+	AssetPairsInfoMargin AssetPairsInfo = "margin"
 )
 
 // GetTradableAssetPairsService returns tradable asset pair info, keyed by
@@ -266,8 +268,8 @@ type AssetPair struct {
 	LotMultiplier      int             `json:"lot_multiplier"`       // amount to multiply lot volume by to get currency volume
 	LeverageBuy        []int           `json:"leverage_buy"`         // array of leverage amounts available when buying
 	LeverageSell       []int           `json:"leverage_sell"`        // array of leverage amounts available when selling
-	Fees               []FeeTier       `json:"fees"`                 // taker fee schedule [volume, percent]
-	FeesMaker          []FeeTier       `json:"fees_maker"`           // maker fee schedule [volume, percent]
+	Fees               []FeeTier       `json:"fees"`                 // DEPRECATED since 2026-09-08: always empty; use GetTradeVolume
+	FeesMaker          []FeeTier       `json:"fees_maker"`           // DEPRECATED since 2026-09-08: always empty; use GetTradeVolume
 	FeeVolumeCurrency  string          `json:"fee_volume_currency"`  // volume discount currency
 	MarginCall         int             `json:"margin_call"`          // margin call level
 	MarginStop         int             `json:"margin_stop"`          // stop-out / liquidation margin level
