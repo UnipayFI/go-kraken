@@ -147,6 +147,7 @@ Public channels: `ticker`, `book`, `ohlc`, `trade`, `instrument`. Private channe
 | Subaccounts | `subaccount.go` | CreateSubaccount, AccountTransfer (institutional) |
 | Earn | `earn.go` | Allocate, Deallocate, Allocate/Deallocate Status, Strategies, Allocations |
 | Transparency | `transparency.go` | PreTrade, PostTrade (MiFID pre/post-trade data) |
+| Affiliate | `affiliate.go` | DailyActivity (KOL referred-user activity; `/affiliate/v1`, no envelope) |
 | WebSocket auth | `websocket.go` | GetWebSocketsToken (REST) |
 | Shared types | `types.go` | order enums, `NanoTime`, `MethodLimit` |
 
