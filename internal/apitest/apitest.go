@@ -108,6 +108,17 @@ func FetchRawPost(t *testing.T, c request.Client, ctx context.Context, path stri
 	return raw
 }
 
+// FetchRawBareGet returns the raw body of a signed GET endpoint that answers
+// without the {error, result} envelope (e.g. /affiliate/v1/*).
+func FetchRawBareGet(t *testing.T, c request.Client, ctx context.Context, path string, params map[string]string) []byte {
+	t.Helper()
+	raw, err := request.DoRaw(request.Get(ctx, c, path, params).WithSign())
+	if err != nil {
+		t.Fatalf("raw GET %s: %v", path, err)
+	}
+	return raw
+}
+
 // AssertCovers checks that every JSON key present in the real response (raw) is
 // also produced by marshaling the typed value. It compares key *sets* (not
 // values), recursing into nested objects and merging array/map elements, so a

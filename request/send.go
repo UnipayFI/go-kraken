@@ -82,6 +82,46 @@ func DoRawResult(r *Request) ([]byte, error) {
 	return env.Result, nil
 }
 
+// DoBare executes the request and decodes the whole response body into *T, for
+// endpoints that return the object itself instead of the {error, result}
+// envelope (e.g. /affiliate/v1/*). A non-2xx status is returned as a
+// *client.ProblemError when the body is problem+json.
+func DoBare[T any](r *Request) (resp *T, err error) {
+	if r.err != nil {
+		return nil, r.err
+	}
+	if err = r.prepare(); err != nil {
+		return nil, err
+	}
+
+	r.client.GetLogger().Debugf("request: %s %s", r.method, r.r.URL)
+	defer func() {
+		if err != nil {
+			r.client.GetLogger().Errorf("request %s %s failed: %s", r.method, r.r.URL, err)
+		}
+	}()
+
+	response, err := r.r.Send()
+	if err != nil {
+		return nil, err
+	}
+	body := response.Body()
+	r.client.GetLogger().Debugf("response: %s", common.BytesToString(body))
+
+	if response.IsError() {
+		var problem client.ProblemError
+		if uerr := r.client.GetHttpClient().JSONUnmarshal(body, &problem); uerr == nil && problem.Status != 0 {
+			return nil, &problem
+		}
+		return nil, fmt.Errorf("request failed (status %d): %s", response.StatusCode(), common.BytesToString(body))
+	}
+	var out T
+	if uerr := r.client.GetHttpClient().JSONUnmarshal(body, &out); uerr != nil {
+		return nil, fmt.Errorf("request failed (status %d): %s", response.StatusCode(), common.BytesToString(body))
+	}
+	return &out, nil
+}
+
 // DoRaw executes the request and returns the raw, undecoded response body.
 func DoRaw(r *Request) ([]byte, error) {
 	if r.err != nil {
@@ -98,9 +138,10 @@ func DoRaw(r *Request) ([]byte, error) {
 }
 
 // prepare finalizes the URL, body and (when private) the API-Key / API-Sign
-// signing headers. For a signed request the nonce is injected into the body and
+// signing headers. For a signed POST the nonce is injected into the body and
 // the signature is computed over uriPath + SHA256(nonce + postData), using the
-// exact bytes that go on the wire.
+// exact bytes that go on the wire. A signed GET has no body: the nonce travels
+// in the API-Nonce header and the signed uriPath includes the query string.
 func (r *Request) prepare() error {
 	r.r.URL = r.fullURL()
 	r.r.Method = r.method
@@ -121,25 +162,36 @@ func (r *Request) prepare() error {
 	}
 
 	nonce := strconv.FormatInt(r.client.Nonce(), 10)
-	r.params.Set("nonce", nonce)
-	postData := r.params.Encode()
+	uriPath, postData := r.path, ""
+	if r.method == http.MethodGet {
+		if len(r.params) > 0 {
+			uriPath += "?" + r.params.Encode()
+		}
+	} else {
+		r.params.Set("nonce", nonce)
+		postData = r.params.Encode()
+	}
 
 	var (
 		sign string
 		err  error
 	)
 	if fn := r.client.GetSignFn(); fn != nil {
-		sign, err = fn(secret, r.path, nonce, postData)
+		sign, err = fn(secret, uriPath, nonce, postData)
 	} else {
-		sign, err = HMACSign(secret, r.path, nonce, postData)
+		sign, err = HMACSign(secret, uriPath, nonce, postData)
 	}
 	if err != nil {
 		return err
 	}
 
-	r.r.SetHeader("Content-Type", "application/x-www-form-urlencoded")
 	r.r.SetHeader("API-Key", apiKey)
 	r.r.SetHeader("API-Sign", sign)
+	if r.method == http.MethodGet {
+		r.r.SetHeader("API-Nonce", nonce)
+		return nil
+	}
+	r.r.SetHeader("Content-Type", "application/x-www-form-urlencoded")
 	r.r.SetBody(postData)
 	return nil
 }

@@ -20,7 +20,9 @@ type SignFn = func(secret, uriPath, nonce, postData string) (signature string, e
 //
 // where uriPath is the full path (e.g. "/0/private/AddOrder"), postData is the
 // url-encoded POST body (which itself begins with "nonce=..."), and nonce is
-// that same nonce value as a string. The secret is the base64 "Private Key"
+// that same nonce value as a string. For a signed GET (e.g. /affiliate/v1/*)
+// uriPath carries the query string ("/affiliate/v1/daily-activity?limit=50")
+// and postData is empty. The secret is the base64 "Private Key"
 // from the Kraken API-management page and is decoded to raw bytes before use as
 // the HMAC key.
 func HMACSign(secret, uriPath, nonce, postData string) (string, error) {

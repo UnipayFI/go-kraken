@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 	"strings"
+
+	"github.com/go-json-experiment/json/jsontext"
 )
 
 // APIError is the error envelope Kraken returns. Every REST response carries an
@@ -40,4 +42,20 @@ func (e *APIError) Has(substr string) bool {
 func IsAPIError(err error) bool {
 	_, ok := err.(*APIError)
 	return ok
+}
+
+// ProblemError is the RFC 7807 (application/problem+json) error body returned,
+// with a non-2xx status, by Kraken REST surfaces that skip the {error, result}
+// envelope (e.g. /affiliate/v1/*).
+type ProblemError struct {
+	Type   string         `json:"type"`   // problem type URI, e.g. "tag:kraken.com,2025:InvalidKey"
+	Status int            `json:"status"` // HTTP status code
+	Title  string         `json:"title"`  // short summary, e.g. "API: Invalid key"
+	Data   jsontext.Value `json:"data"`   // problem-specific details (often null)
+	Source string         `json:"source"` // emitting component, e.g. "Gateway"
+}
+
+// Error returns the status, title and problem type.
+func (e *ProblemError) Error() string {
+	return fmt.Sprintf("<ProblemError> %d %s (%s)", e.Status, e.Title, e.Type)
 }

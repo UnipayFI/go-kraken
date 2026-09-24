@@ -83,9 +83,9 @@ func (r *Request) SetParam(key, value string) *Request {
 	return r
 }
 
-// WithSign marks the request as private: a nonce is injected into the body and
-// the API-Key / API-Sign headers are attached at send time. Public market
-// endpoints omit this.
+// WithSign marks the request as private: a nonce is injected into the body (or,
+// for GET, the API-Nonce header) and the API-Key / API-Sign headers are attached
+// at send time. Public market endpoints omit this.
 func (r *Request) WithSign() *Request {
 	r.needSign = true
 	return r

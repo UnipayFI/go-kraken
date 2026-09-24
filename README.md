@@ -164,8 +164,8 @@ Public channels: `ticker`, `book`, `ohlc`, `trade`, `instrument`. Private channe
 | Package | Scope |
 |---------|-------|
 | `kraken.go` | entry point: `NewClient` (REST) + `NewWebSocketClient` (in `ws.go`) |
-| `client/` | REST + WebSocket clients, options, nonce generator, HMAC-SHA512 signer config, WS token cache, `APIError` |
-| `request/` | request builder (form-urlencoded), generic `Do[T]` envelope decode, signer, WS subscribe/order-entry framework |
+| `client/` | REST + WebSocket clients, options, nonce generator, HMAC-SHA512 signer config, WS token cache, `APIError`, `ProblemError` |
+| `request/` | request builder (form-urlencoded / signed GET), generic `Do[T]` envelope decode + `DoBare[T]`, signer, WS subscribe/order-entry framework |
 | `common/` | constants, global `time.Time` (UNIX-seconds/RFC3339) + `decimal.Decimal` JSON codec |
 | `internal/apitest/` | test-only field-coverage helpers |
 | `cmd/kraw/` | dev tool: sign + dump any endpoint's raw response |
