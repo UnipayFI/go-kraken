@@ -206,6 +206,7 @@ type EarnLockType struct {
 	UnbondingPeriod         int64  `json:"unbonding_period"`          // unbonding period (seconds)
 	UnbondingPeriodVariable bool   `json:"unbonding_period_variable"` // whether the unbonding period varies
 	UnbondingRewards        bool   `json:"unbonding_rewards"`         // whether rewards accrue while unbonding
+	DurationMonths          int64  `json:"duration_months"`           // lock duration in months (timed strategies)
 }
 
 // ===========================================================================
