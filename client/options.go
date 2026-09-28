@@ -120,8 +120,9 @@ func WithNonce(nonceFn func() int64) Options {
 }
 
 // WithHTTPClient supplies a pre-configured resty client (custom transport,
-// timeouts, TLS, etc.). The JSON (un)marshalers and base URL are still set by
-// the SDK afterwards.
+// timeouts, TLS, etc.). The base URL is still set by the SDK afterwards, and
+// responses are decoded with the SDK's JSON codec (common.JSONUnmarshal)
+// whatever JSON (un)marshalers the client carries.
 func WithHTTPClient(client *resty.Client) Options {
 	return func(opt *Option) {
 		if client != nil {

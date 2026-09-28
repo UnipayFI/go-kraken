@@ -44,7 +44,7 @@ func Do[T any](r *Request) (resp *T, err error) {
 	r.client.GetLogger().Debugf("response: %s", common.BytesToString(body))
 
 	var out apiResponse[T]
-	if uerr := r.client.GetHttpClient().JSONUnmarshal(body, &out); uerr != nil {
+	if uerr := common.JSONUnmarshal(body, &out); uerr != nil {
 		// The body was not a well-formed envelope (gateway error, HTML, ...)
 		// or its result did not decode into T.
 		return nil, fmt.Errorf("request failed (status %d): %s: %w", response.StatusCode(), common.BytesToString(body), uerr)
@@ -74,7 +74,7 @@ func DoRawResult(r *Request) ([]byte, error) {
 		Error  []string       `json:"error"`
 		Result jsontext.Value `json:"result"`
 	}
-	if uerr := r.client.GetHttpClient().JSONUnmarshal(body, &env); uerr != nil {
+	if uerr := common.JSONUnmarshal(body, &env); uerr != nil {
 		return nil, fmt.Errorf("request failed (status %d): %s: %w", response.StatusCode(), common.BytesToString(body), uerr)
 	}
 	if len(env.Error) > 0 {
@@ -111,13 +111,13 @@ func DoBare[T any](r *Request) (resp *T, err error) {
 
 	if response.IsError() {
 		var problem client.ProblemError
-		if uerr := r.client.GetHttpClient().JSONUnmarshal(body, &problem); uerr == nil && problem.Status != 0 {
+		if uerr := common.JSONUnmarshal(body, &problem); uerr == nil && problem.Status != 0 {
 			return nil, &problem
 		}
 		return nil, fmt.Errorf("request failed (status %d): %s", response.StatusCode(), common.BytesToString(body))
 	}
 	var out T
-	if uerr := r.client.GetHttpClient().JSONUnmarshal(body, &out); uerr != nil {
+	if uerr := common.JSONUnmarshal(body, &out); uerr != nil {
 		return nil, fmt.Errorf("request failed (status %d): %s: %w", response.StatusCode(), common.BytesToString(body), uerr)
 	}
 	return &out, nil
