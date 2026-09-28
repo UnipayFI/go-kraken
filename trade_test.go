@@ -113,6 +113,13 @@ func TestTradeLifecycle(t *testing.T) {
 	} else {
 		t.Logf("OrderAmends: count=%d first=%+v", amends.Count, amends.Amends[0])
 	}
+	for _, a := range amends.Amends {
+		// The amends were made moments ago, so a timestamp far from now
+		// means the field's format unit is wrong (a wrong unit never errors).
+		if d := time.Since(a.Timestamp).Abs(); d > 24*time.Hour {
+			t.Errorf("OrderAmends: amend %s timestamp %v is %v from now; wrong format unit?", a.AmendID, a.Timestamp, d)
+		}
+	}
 	pace()
 
 	// 3. Edit Order (cancel-replace; yields a new txid).

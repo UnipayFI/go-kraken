@@ -351,16 +351,16 @@ type OrderAmendsResult struct {
 
 // OrderAmend is one amendment record.
 type OrderAmend struct {
-	AmendID      string          `json:"amend_id"`      // amendment identifier
-	AmendType    string          `json:"amend_type"`    // original, user, or restated
-	OrderQty     decimal.Decimal `json:"order_qty"`     // order quantity (base asset)
-	DisplayQty   decimal.Decimal `json:"display_qty"`   // quantity shown in book for iceberg orders
-	RemainingQty decimal.Decimal `json:"remaining_qty"` // remaining un-traded quantity
-	LimitPrice   decimal.Decimal `json:"limit_price"`   // limit price restriction
-	TriggerPrice decimal.Decimal `json:"trigger_price"` // trigger price on trigger order types
-	Reason       string          `json:"reason"`        // reason for this amend
-	PostOnly     bool            `json:"post_only"`     // whether restricted from taking liquidity
-	Timestamp    NanoTime        `json:"timestamp"`     // amendment time (UNIX nanoseconds)
+	AmendID      string          `json:"amend_id"`                   // amendment identifier
+	AmendType    string          `json:"amend_type"`                 // original, user, or restated
+	OrderQty     decimal.Decimal `json:"order_qty"`                  // order quantity (base asset)
+	DisplayQty   decimal.Decimal `json:"display_qty"`                // quantity shown in book for iceberg orders
+	RemainingQty decimal.Decimal `json:"remaining_qty"`              // remaining un-traded quantity
+	LimitPrice   decimal.Decimal `json:"limit_price"`                // limit price restriction
+	TriggerPrice decimal.Decimal `json:"trigger_price"`              // trigger price on trigger order types
+	Reason       string          `json:"reason"`                     // reason for this amend
+	PostOnly     bool            `json:"post_only"`                  // whether restricted from taking liquidity
+	Timestamp    time.Time       `json:"timestamp,format:unixmilli"` // amendment time (UNIX milliseconds, although the docs' examples show nanoseconds)
 }
 
 // ===========================================================================
