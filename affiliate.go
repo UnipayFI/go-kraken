@@ -38,8 +38,10 @@ const (
 // authenticated affiliate partner. It has two mutually exclusive variants
 // (sending both is a 400):
 //
-//   - Day: SetActivityDate — every visible enrolled referred user active that
-//     UTC trade day, plus day-wide totals.
+//   - Day: SetActivityDate — every enrolled referred user active that UTC
+//     trade day who has not opted out, users who enrolled that day, plus
+//     day-wide totals. SetAllUsers(true) lists the full still-enrolled roster
+//     instead, including quiet users and opted-out existence stubs.
 //   - History: SetIIBAN + SetStartDate + SetEndDate — the same per-day entries
 //     for up to ten known participants over an inclusive date range; day-wide
 //     fields (Totals, ActiveUsers, Revision, Estimated, OptedOut) are omitted.
@@ -58,6 +60,16 @@ func (c *Client) NewGetDailyActivityService() *GetDailyActivityService {
 // SetActivityDate selects the day variant for one UTC trade date (YYYY-MM-DD).
 func (s *GetDailyActivityService) SetActivityDate(date string) *GetDailyActivityService {
 	s.params["activity_date"] = date
+	return s
+}
+
+// SetAllUsers (day variant only) includes every user still enrolled in the
+// plan by the requested date, whether or not they traded; quiet users have
+// empty products and opted-out users appear as stubs (OptedOut set). Totals,
+// ActiveUsers and Revision are unchanged. Keep it unchanged when following
+// NextCursor; sending it with the history variant is a 400.
+func (s *GetDailyActivityService) SetAllUsers(allUsers bool) *GetDailyActivityService {
+	s.params["all_users"] = strconv.FormatBool(allUsers)
 	return s
 }
 
@@ -105,8 +117,8 @@ type DailyActivity struct {
 	Currency     string                     `json:"currency"`                    // reporting currency for every monetary figure (always USD today)
 	Revision     time.Time                  `json:"revision,format:RFC3339"`     // day variant, first page: when these figures were last written; zero when no rows
 	GeneratedAt  time.Time                  `json:"generated_at,format:RFC3339"` // response generation time
-	ActiveUsers  int64                      `json:"active_users"`                // day variant, first page: visible enrolled users that day
-	Totals       map[string]ProductActivity `json:"totals"`                      // day variant, first page: totals for visible users, keyed by product
+	ActiveUsers  int64                      `json:"active_users"`                // day variant, first page: enrolled users with reportable trading that day (excludes quiet and opted-out users)
+	Totals       map[string]ProductActivity `json:"totals"`                      // day variant, first page: totals for users who have not opted out (including those not enrolled in the plan), keyed by product
 	NextCursor   string                     `json:"next_cursor"`                 // present when more results exist; pass to SetCursor
 	Items        []DailyActivityItem        `json:"items"`                       // one entry per referred user (per day in the history variant)
 	Estimated    bool                       `json:"estimated"`                   // day variant, first page: amounts are still an estimate
@@ -114,13 +126,19 @@ type DailyActivity struct {
 	Limit        int                        `json:"limit"`                       // page size used for this response
 }
 
-// DailyActivityItem is one referred user's activity, by plan and then product.
+// DailyActivityItem is one referred user's activity, by plan and then product,
+// or an opted-out existence stub (OptedOut set): a stub keeps only
+// RefereeReference, EnrolledAt and each plan's ReferralCode, and its empty
+// products mean withheld data, not zero activity.
 type DailyActivityItem struct {
-	ActivityDate     string         `json:"activity_date"`     // history variant only: this entry's own day
-	MaskedIIBAN      string         `json:"masked_iiban"`      // last four IIBAN characters; not unique, do not join on it
-	Plans            []ReferralPlan `json:"plans"`             // the caller's plans this user is enrolled in
-	RefereeReference string         `json:"referee_reference"` // partner-scoped stable join key across days
-	Estimated        bool           `json:"estimated"`         // history variant: amounts for this date are an estimate
+	ActivityDate     string         `json:"activity_date"`              // history variant only: this entry's own day; absent on opted-out stubs
+	IIBAN            string         `json:"iiban"`                      // full Kraken account identifier, usable with SetIIBAN; absent on opted-out stubs
+	MaskedIIBAN      string         `json:"masked_iiban"`               // last four IIBAN characters; not unique, do not join on it
+	Plans            []ReferralPlan `json:"plans"`                      // the caller's plans this user is enrolled in
+	RefereeReference string         `json:"referee_reference"`          // partner-scoped stable join key across days
+	OptedOut         bool           `json:"opted_out"`                  // true for an opted-out existence stub
+	EnrolledAt       time.Time      `json:"enrolled_at,format:RFC3339"` // opted-out stubs only: enrollment time, truncated to the hour (visible entries use Plans[].EnrolledAt)
+	Estimated        bool           `json:"estimated"`                  // history variant: amounts for this date are an estimate
 }
 
 // ReferralPlan is one of the caller's reward plans a referred user is enrolled in.
@@ -128,7 +146,7 @@ type ReferralPlan struct {
 	ReferralCode  string                     `json:"referral_code"`              // referral code
 	Campaign      string                     `json:"campaign"`                   // enrollment suffix, not the plan name
 	ReferralLevel int                        `json:"referral_level"`             // referral level
-	EnrolledAt    time.Time                  `json:"enrolled_at,format:RFC3339"` // enrollment time, truncated to the hour
+	EnrolledAt    time.Time                  `json:"enrolled_at,format:RFC3339"` // enrollment time, truncated to the hour; absent on opted-out stubs
 	Status        string                     `json:"status"`                     // open vocabulary; "active" and "completed" are payable
 	Earning       bool                       `json:"earning"`                    // whether this plan currently pays the caller
 	ExpiresAt     time.Time                  `json:"expires_at,format:RFC3339"`  // plan expiry
