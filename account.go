@@ -727,12 +727,15 @@ type TradeVolume struct {
 
 // FeeInfo is the fee schedule for one pair.
 type FeeInfo struct {
-	Fee        decimal.Decimal `json:"fee"`        // current fee (percent)
-	MinFee     decimal.Decimal `json:"minfee"`     // minimum fee (percent, if not fixed)
-	MaxFee     decimal.Decimal `json:"maxfee"`     // maximum fee (percent, if not fixed)
-	NextFee    decimal.Decimal `json:"nextfee"`    // next-tier fee (percent, if not fixed)
-	TierVolume decimal.Decimal `json:"tiervolume"` // volume level of current tier
-	NextVolume decimal.Decimal `json:"nextvolume"` // volume level of next tier
+	Fee               decimal.Decimal `json:"fee"`               // current fee (percent)
+	MinFee            decimal.Decimal `json:"minfee"`            // minimum fee (percent, if not fixed)
+	MaxFee            decimal.Decimal `json:"maxfee"`            // maximum fee (percent, if not fixed)
+	NextFee           decimal.Decimal `json:"nextfee"`           // next-tier fee (percent, if not fixed)
+	TierVolume        decimal.Decimal `json:"tiervolume"`        // volume level of current tier
+	NextVolume        decimal.Decimal `json:"nextvolume"`        // volume level of next tier
+	TierFuturesVolume decimal.Decimal `json:"tierfuturesvolume"` // current futures-volume tier threshold, when visible in the schedule
+	NextFuturesVolume decimal.Decimal `json:"nextfuturesvolume"` // next futures-volume tier threshold, when visible in the schedule
+	VolumeOffset      decimal.Decimal `json:"volumeoffset"`      // volume adjustment added to the trade volume when computing fees
 }
 
 // FeeSchedule is the full fee schedule of one trading pair.
