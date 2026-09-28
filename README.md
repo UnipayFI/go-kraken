@@ -24,7 +24,7 @@ Requires Go 1.27 (see [JSON and timestamps](#json-and-timestamps)).
 
 - One signing/transport core shared by every endpoint (`client` + `request` + `common`).
 - Fluent per-endpoint API: `NewXxxService(...).SetFoo(...).Do(ctx)`.
-- Amounts as `decimal.Decimal`, timestamps as `time.Time` whose wire format is declared by a `format` tag option (`json:"opentm,format:unix"`, `json:"timestamp,format:RFC3339Nano"`) — Kraken's string-encoded numbers, UNIX-seconds (and the occasional RFC3339 / nanosecond) times, and `false`/`""`/`"0"` "not set" sentinels are decoded for you.
+- Amounts as `decimal.Decimal`, timestamps as `time.Time` whose wire format is declared by a `format` tag option (`json:"opentm,format:unix"`, `json:"timestamp,format:RFC3339Nano"`) — Kraken's string-encoded numbers, UNIX-seconds (and the occasional RFC3339 / nanosecond / millisecond) times, and `false`/`""`/`"0"` "not set" sentinels are decoded for you.
 - Kraken's positional-array payloads (OHLC, order book, trades, spreads, ticker fields, fee tiers) are decoded into named struct fields.
 - Every endpoint is tested against the live API; trading is exercised with tiny, reversible, large-cap orders.
 
@@ -140,18 +140,25 @@ Public channels: `ticker`, `book`, `ohlc`, `trade`, `instrument`. Private channe
 
 The SDK uses Go 1.27's `encoding/json/v2` (keep the default `jsonv2` GOEXPERIMENT enabled; without it the SDK does not
 compile). Every `time.Time` field declares the format Kraken actually sends with the `format` tag option — `format:unix`
-for UNIX seconds (e.g. `json:"opentm,format:unix"`), `format:RFC3339` / `format:RFC3339Nano` for RFC 3339 strings,
-`format:unixnano` for nanoseconds — experimental in Go 1.27, and enabled by the SDK's codec. `common.JSONMarshal` /
-`common.JSONUnmarshal` apply that option's semantics plus Kraken's quirks: unix values are read quoted or bare and written
-bare, with sub-second digits kept exactly (not truncated, and no longer rounded through `float64`), and `0`/`"0"`/`""`/`null`
-read as the zero time, which is written as `0` (unix formats) or `"0"` (RFC 3339). Decoded times are in UTC — use `.Equal`
-to compare and `.In(loc)` / `.Local()` to display. The time columns of the positional arrays (OHLC candles, trades,
-spreads, order-book levels) and the OHLC/spread `Last` cursors are UNIX seconds too; `common.UnmarshalUnixTime` /
-`common.MarshalUnixTime` decode and encode such untagged values.
+for UNIX seconds (e.g. `json:"opentm,format:unix"`), `format:RFC3339` / `format:RFC3339Nano` for RFC 3339 strings, and
+`format:unixnano` / `format:unixmilli` for the Level3 order book's nanoseconds and the order-amend history's milliseconds —
+experimental in Go 1.27, and enabled by the SDK's codec. `common.JSONMarshal` / `common.JSONUnmarshal` apply that option's
+semantics plus Kraken's quirks: unix values are read quoted or bare and written bare, with sub-second digits kept exactly
+(not truncated, and no longer rounded through `float64`), and `0`/`"0"`/`""`/`null` read as the zero time, which is written
+as `0` (unix formats) or `"0"` (RFC 3339). Unix values decode in UTC; RFC 3339 values keep the offset they carry, which
+Kraken always sends as `Z`, so decoded times are in UTC — use `.Equal` to compare and `.In(loc)` / `.Local()` to display.
+The time columns of the positional arrays (OHLC candles, trades, spreads, order-book levels) and the OHLC/spread `Last`
+cursors are UNIX seconds too; `common.UnmarshalUnixTime` / `common.MarshalUnixTime` decode and encode such untagged values.
 
 A `time.Time` without a `format` option is RFC 3339, as in the standard library. That includes your own types passed
 through `common.JSONMarshal` / `common.JSONUnmarshal` or the `request` helpers, which earlier versions decoded from UNIX
 seconds or RFC 3339, whichever arrived: tag such fields `format:unix` or `format:RFC3339`.
+
+Coming from an earlier version: `common.JSONMarshal` used to write every `time.Time` as UNIX seconds; fields Kraken sends as
+RFC 3339 are now written as RFC 3339 strings, so JSON stored by an earlier version cannot be read back into those fields.
+The `NanoTime` type is gone (`L3Entry.Timestamp` and `OrderAmend.Timestamp` are plain `time.Time`), and
+`OrderAmend.Timestamp` is now read as milliseconds, the unit Kraken was observed to send, instead of the nanoseconds
+shown in the documentation's examples.
 
 Go 1.27 only honours `format` tags when the experimental `ExperimentalSupportFormatTag` option is passed, so serialize SDK
 types with `common.JSONMarshal` / `common.JSONUnmarshal`. Where you only need `encoding/json/v2` to accept the tags (say, to

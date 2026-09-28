@@ -15,14 +15,18 @@ import (
 // a bare integer (server unixtime), a bare number with sub-second precision
 // ("opentm": 1688669448.7475) or a quoted string ("createdtm": "1688669085"),
 // with 0 / "0" / "" when "not set" — except on the newer surfaces (WebSocket
-// v2, Earn, Transparency, system status), which send RFC 3339 strings.
+// v2, Earn, Transparency, Affiliate, system status) and CancelAllOrdersAfter,
+// which send RFC 3339 strings, and the Level3 book and order-amend history,
+// which send UNIX nano/milliseconds.
 //
 // Every time.Time field declares its wire format with the standard `format`
 // tag option (e.g. `json:"opentm,format:unix"`), which Go 1.27's
 // encoding/json/v2 only honours when ExperimentalSupportFormatTag is set. The
 // time codec below keeps the standard semantics of that format and only adds
 // Kraken's quirks on top: quoted-or-bare numbers and the "not set" sentinels.
-// decimal.Decimal fields stay plain fields with a plain json tag.
+// The time columns of Kraken's positional arrays have no tag to carry a format
+// and go through UnmarshalUnixTime / MarshalUnixTime instead. decimal.Decimal
+// fields stay plain fields with a plain json tag.
 var (
 	unmarshalOptions json.Options
 	marshalOptions   json.Options
