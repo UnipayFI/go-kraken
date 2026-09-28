@@ -63,6 +63,9 @@ func initJSON() (err error) {
 		return errFormatOf
 	}
 	formatTag := jsonexp.ExperimentalSupportFormatTag(true)
+	if err := findFormatTagBit(formatTag); err != nil {
+		return err
+	}
 	unmarshalOptions = json.JoinOptions(formatTag, json.WithUnmarshalers(json.JoinUnmarshalers(
 		json.UnmarshalFromFunc(decodeTime),
 		json.UnmarshalFromFunc(decodeDecimal),

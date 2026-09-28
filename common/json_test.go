@@ -1,8 +1,10 @@
 package common
 
 import (
+	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -497,4 +499,96 @@ func TestConcurrentFormats(t *testing.T) {
 		})
 	}
 	wg.Wait()
+}
+
+// stamps is a user type with its own v2 JSON methods that (un)marshals the
+// time.Time elements of an array itself.
+type stamps []time.Time
+
+func (s *stamps) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
+	if _, err := dec.ReadToken(); err != nil {
+		return err
+	}
+	for dec.PeekKind() != ']' {
+		var t time.Time
+		if err := json.UnmarshalDecode(dec, &t); err != nil {
+			return err
+		}
+		*s = append(*s, t)
+	}
+	_, err := dec.ReadToken()
+	return err
+}
+
+func (s stamps) MarshalJSONTo(enc *jsontext.Encoder) error {
+	if err := enc.WriteToken(jsontext.BeginArray); err != nil {
+		return err
+	}
+	for _, t := range s {
+		if err := json.MarshalEncode(enc, t); err != nil {
+			return err
+		}
+	}
+	return enc.WriteToken(jsontext.EndArray)
+}
+
+// TestFormatNotInherited checks that a time.Time nested below a format-tagged
+// value does not inherit that format — the standard library clears the
+// FormatTag flag (but not Format) on entering an array or object.
+func TestFormatNotInherited(t *testing.T) {
+	std := jsonexp.ExperimentalSupportFormatTag(true)
+	type inner struct {
+		Plain time.Time `json:"plain"`
+		U     time.Time `json:"u,format:unix"`
+	}
+	type outer struct {
+		S stamps  `json:"s,format:unix"`
+		L []inner `json:"l,format:emitnull"`
+	}
+	for _, in := range []string{
+		`{"s":["2026-01-01T00:00:00Z"],"l":[{"plain":"2026-01-01T00:00:00Z","u":1790567886}]}`,
+		`{"s":[1790567886]}`,
+		`{"s":["0"]}`,
+	} {
+		var got, want outer
+		err := JSONUnmarshal([]byte(in), &got)
+		wantErr := json.Unmarshal([]byte(in), &want, std)
+		if (err != nil) != (wantErr != nil) || !reflect.DeepEqual(got, want) {
+			t.Errorf("%s: kraken %+v, %v; std %+v, %v", in, got, err, want, wantErr)
+		}
+	}
+	v := outer{S: stamps{time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), {}}}
+	out, err := JSONMarshal(v)
+	stdOut, stdErr := json.Marshal(v, std)
+	if string(out) != string(stdOut) || (err != nil) != (stdErr != nil) {
+		t.Errorf("marshal = %s, %v; std %s, %v", out, err, stdOut, stdErr)
+	}
+}
+
+// TestFieldOffset checks that an options layout fieldOffset does not expect
+// is reported as an error, never a panic during package initialization.
+func TestFieldOffset(t *testing.T) {
+	type flags struct{ Presence, Values uint64 }
+	type inner struct{ Format string }
+	for name, typ := range map[string]reflect.Type{
+		"pointer": reflect.TypeOf(struct{ Flags *flags }{}),
+		"array":   reflect.TypeOf(struct{ Flags [2]uint64 }{}),
+		"scalar":  reflect.TypeOf(struct{ Flags uint64 }{}),
+		"missing": reflect.TypeOf(struct{ Other flags }{}),
+		"kind":    reflect.TypeOf(struct{ Flags struct{ Presence uint32 } }{}),
+	} {
+		if _, err := fieldOffset(typ, reflect.Uint64, "Flags", "Presence"); err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
+	typ := reflect.TypeOf(struct {
+		Flags flags
+		inner
+	}{})
+	if off, err := fieldOffset(typ, reflect.Uint64, "Flags", "Presence"); err != nil || off != 0 {
+		t.Errorf("Flags.Presence = %d, %v; want 0", off, err)
+	}
+	if off, err := fieldOffset(typ, reflect.String, "Format"); err != nil || off != 16 {
+		t.Errorf("Format = %d, %v; want 16", off, err)
+	}
 }

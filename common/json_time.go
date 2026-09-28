@@ -6,6 +6,7 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
+	"math/bits"
 	"reflect"
 	"strings"
 	"time"
@@ -207,47 +208,108 @@ func unquote(val jsontext.Value) ([]byte, error) {
 // only valid for the duration of that call.
 //
 // encoding/json/v2 has no public accessor for the format, so this reads the
-// Format field of the options struct those methods return (a
-// *jsonopts.Struct in Go 1.27). errFormatOf reports when that layout is not
-// what this code expects, in which case formatOf always returns "".
-//
-// Format is only reset between struct fields, so it must only be consulted for
-// the value a format-tagged field holds directly (time.Time or *time.Time), not
-// for values nested inside a format-tagged type with its own JSON methods.
+// options struct those methods return (a *jsonopts.Struct in Go 1.27): its
+// Format field, which is only valid while the FormatTag flag is present. The
+// standard library sets both for the value a format-tagged field holds and
+// clears the flag, but not Format, on entering a nested array or object, so
+// the flag is what keeps a nested value from inheriting its parent's format.
+// errFormatOf reports when that layout is not what this code expects, and
+// until findFormatTagBit has run formatTagBit is 0; either way formatOf
+// returns "".
 func formatOf(opts json.Options) string {
-	if errFormatOf != nil || reflect.TypeOf(opts) != optionsType {
+	p := optionsStruct(opts)
+	if p == nil || *(*uint64)(unsafe.Add(p, presenceOffset))&formatTagBit == 0 {
 		return ""
 	}
-	// An interface value is a (type, data) word pair; data points at the struct.
-	p := (*[2]unsafe.Pointer)(unsafe.Pointer(&opts))[1]
 	return *(*string)(unsafe.Add(p, formatOffset))
 }
 
+// optionsStruct returns a pointer to the options struct opts points at, or nil
+// if opts is not of the expected type.
+func optionsStruct(opts json.Options) unsafe.Pointer {
+	if errFormatOf != nil || reflect.TypeOf(opts) != optionsType {
+		return nil
+	}
+	// An interface value is a (type, data) word pair; data points at the struct.
+	return (*[2]unsafe.Pointer)(unsafe.Pointer(&opts))[1]
+}
+
+// findFormatTagBit sets formatTagBit to the presence bit of the FormatTag
+// flag: the one bit set while a format-tagged field is decoded and clear while
+// an untagged one is.
+func findFormatTagBit(formatTag json.Options) error {
+	var tagged, untagged uint64
+	record := json.UnmarshalFromFunc(func(dec *jsontext.Decoder, _ *time.Time) error {
+		if p := optionsStruct(dec.Options()); p != nil {
+			presence := *(*uint64)(unsafe.Add(p, presenceOffset))
+			if *(*string)(unsafe.Add(p, formatOffset)) != "" {
+				tagged = presence
+			} else {
+				untagged = presence
+			}
+		}
+		return errors.ErrUnsupported
+	})
+	var probe struct {
+		A time.Time `json:"a,format:unix"`
+		B time.Time `json:"b"`
+	}
+	if err := json.Unmarshal([]byte(`{"a":1,"b":"2026-01-01T00:00:00Z"}`), &probe, formatTag, json.WithUnmarshalers(record)); err != nil {
+		return fmt.Errorf("kraken: encoding/json/v2 format tag support unavailable: %w", err)
+	}
+	bit := tagged &^ untagged
+	if bits.OnesCount64(bit) != 1 {
+		return fmt.Errorf("kraken: cannot locate encoding/json/v2's format tag flag (presence %#x with a format, %#x without)", tagged, untagged)
+	}
+	formatTagBit = bit
+	return nil
+}
+
 var (
-	optionsType  = reflect.TypeOf(new(jsontext.Decoder).Options())
-	formatOffset uintptr
-	errFormatOf  = func() error {
+	optionsType    = reflect.TypeOf(new(jsontext.Decoder).Options())
+	formatOffset   uintptr // of the options struct's Format string
+	presenceOffset uintptr // of the options struct's Flags.Presence uint64
+	formatTagBit   uint64  // set by findFormatTagBit
+	errFormatOf    = func() error {
 		if enc := reflect.TypeOf(new(jsontext.Encoder).Options()); enc != optionsType {
 			return fmt.Errorf("kraken: encoder options type %v differs from decoder options type %v", enc, optionsType)
 		}
 		if optionsType == nil || optionsType.Kind() != reflect.Pointer || optionsType.Elem().Kind() != reflect.Struct {
 			return fmt.Errorf("kraken: unexpected encoding/json/v2 options type %v", optionsType)
 		}
-		sf, ok := optionsType.Elem().FieldByName("Format")
-		if !ok || sf.Type.Kind() != reflect.String {
-			return fmt.Errorf("kraken: encoding/json/v2 options type %v has no Format string field", optionsType)
+		var err error
+		if formatOffset, err = fieldOffset(optionsType.Elem(), reflect.String, "Format"); err != nil {
+			return err
+		}
+		presenceOffset, err = fieldOffset(optionsType.Elem(), reflect.Uint64, "Flags", "Presence")
+		return err
+	}()
+)
+
+// fieldOffset returns the offset in struct type st of the field reached by
+// following names, which must have the given kind and be embedded by value.
+func fieldOffset(st reflect.Type, kind reflect.Kind, names ...string) (offset uintptr, err error) {
+	for _, name := range names {
+		if st.Kind() != reflect.Struct {
+			return 0, fmt.Errorf("kraken: encoding/json/v2 options field %s is not a path of struct fields in %v", strings.Join(names, "."), optionsType)
+		}
+		sf, ok := st.FieldByName(name)
+		if !ok {
+			return 0, fmt.Errorf("kraken: encoding/json/v2 options type %v has no %s field", optionsType, strings.Join(names, "."))
 		}
 		// FieldByName reports the offset within the innermost embedded
 		// struct; sum the offsets along the embedding path.
-		st := optionsType.Elem()
 		for _, i := range sf.Index {
 			if st.Kind() != reflect.Struct {
-				return fmt.Errorf("kraken: encoding/json/v2 options field Format is not embedded by value in %v", optionsType)
+				return 0, fmt.Errorf("kraken: encoding/json/v2 options field %s is not embedded by value in %v", strings.Join(names, "."), optionsType)
 			}
 			f := st.Field(i)
-			formatOffset += f.Offset
+			offset += f.Offset
 			st = f.Type
 		}
-		return nil
-	}()
-)
+	}
+	if st.Kind() != kind {
+		return 0, fmt.Errorf("kraken: encoding/json/v2 options field %s is a %v, want %v", strings.Join(names, "."), st.Kind(), kind)
+	}
+	return offset, nil
+}
