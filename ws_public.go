@@ -42,19 +42,19 @@ func (s *SubscribeTickerService) Do(ctx context.Context, cb func(*WsPush[[]WsTic
 
 // WsTicker is one element of the "ticker" channel data array.
 type WsTicker struct {
-	Symbol    string          `json:"symbol"`     // currency pair
-	Bid       decimal.Decimal `json:"bid"`        // best bid price
-	BidQty    decimal.Decimal `json:"bid_qty"`    // best bid quantity (base)
-	Ask       decimal.Decimal `json:"ask"`        // best ask price
-	AskQty    decimal.Decimal `json:"ask_qty"`    // best ask quantity (base)
-	Last      decimal.Decimal `json:"last"`       // last traded price
-	Volume    decimal.Decimal `json:"volume"`     // 24h base-currency volume
-	VWAP      decimal.Decimal `json:"vwap"`       // 24h volume-weighted average price
-	Low       decimal.Decimal `json:"low"`        // 24h low
-	High      decimal.Decimal `json:"high"`       // 24h high
-	Change    decimal.Decimal `json:"change"`     // 24h price change (quote currency)
-	ChangePct decimal.Decimal `json:"change_pct"` // 24h price change (percent)
-	Timestamp time.Time       `json:"timestamp"`  // event time
+	Symbol    string          `json:"symbol"`                       // currency pair
+	Bid       decimal.Decimal `json:"bid"`                          // best bid price
+	BidQty    decimal.Decimal `json:"bid_qty"`                      // best bid quantity (base)
+	Ask       decimal.Decimal `json:"ask"`                          // best ask price
+	AskQty    decimal.Decimal `json:"ask_qty"`                      // best ask quantity (base)
+	Last      decimal.Decimal `json:"last"`                         // last traded price
+	Volume    decimal.Decimal `json:"volume"`                       // 24h base-currency volume
+	VWAP      decimal.Decimal `json:"vwap"`                         // 24h volume-weighted average price
+	Low       decimal.Decimal `json:"low"`                          // 24h low
+	High      decimal.Decimal `json:"high"`                         // 24h high
+	Change    decimal.Decimal `json:"change"`                       // 24h price change (quote currency)
+	ChangePct decimal.Decimal `json:"change_pct"`                   // 24h price change (percent)
+	Timestamp time.Time       `json:"timestamp,format:RFC3339Nano"` // event time
 }
 
 // ===========================================================================
@@ -91,11 +91,11 @@ func (s *SubscribeBookService) Do(ctx context.Context, cb func(*WsPush[[]WsBook]
 // full depth; an update carries only changed levels (a level with qty 0 is
 // removed).
 type WsBook struct {
-	Symbol    string        `json:"symbol"`    // currency pair
-	Bids      []WsBookLevel `json:"bids"`      // changed/snapshot bid levels
-	Asks      []WsBookLevel `json:"asks"`      // changed/snapshot ask levels
-	Checksum  int64         `json:"checksum"`  // CRC32 of the top-10 book (uint32)
-	Timestamp time.Time     `json:"timestamp"` // event time
+	Symbol    string        `json:"symbol"`                       // currency pair
+	Bids      []WsBookLevel `json:"bids"`                         // changed/snapshot bid levels
+	Asks      []WsBookLevel `json:"asks"`                         // changed/snapshot ask levels
+	Checksum  int64         `json:"checksum"`                     // CRC32 of the top-10 book (uint32)
+	Timestamp time.Time     `json:"timestamp,format:RFC3339Nano"` // event time
 }
 
 // WsBookLevel is one price level in the level-2 book.
@@ -132,17 +132,17 @@ func (s *SubscribeOHLCService) Do(ctx context.Context, cb func(*WsPush[[]WsOHLC]
 
 // WsOHLC is one element of the "ohlc" channel data array.
 type WsOHLC struct {
-	Symbol        string          `json:"symbol"`         // currency pair
-	Open          decimal.Decimal `json:"open"`           // open price
-	High          decimal.Decimal `json:"high"`           // high price
-	Low           decimal.Decimal `json:"low"`            // low price
-	Close         decimal.Decimal `json:"close"`          // close price
-	VWAP          decimal.Decimal `json:"vwap"`           // volume-weighted average price
-	Trades        int64           `json:"trades"`         // number of trades
-	Volume        decimal.Decimal `json:"volume"`         // traded volume (base)
-	IntervalBegin time.Time       `json:"interval_begin"` // candle start time
-	Interval      int             `json:"interval"`       // candle interval (minutes)
-	Timestamp     time.Time       `json:"timestamp"`      // event time
+	Symbol        string          `json:"symbol"`                            // currency pair
+	Open          decimal.Decimal `json:"open"`                              // open price
+	High          decimal.Decimal `json:"high"`                              // high price
+	Low           decimal.Decimal `json:"low"`                               // low price
+	Close         decimal.Decimal `json:"close"`                             // close price
+	VWAP          decimal.Decimal `json:"vwap"`                              // volume-weighted average price
+	Trades        int64           `json:"trades"`                            // number of trades
+	Volume        decimal.Decimal `json:"volume"`                            // traded volume (base)
+	IntervalBegin time.Time       `json:"interval_begin,format:RFC3339Nano"` // candle start time
+	Interval      int             `json:"interval"`                          // candle interval (minutes)
+	Timestamp     time.Time       `json:"timestamp,format:RFC3339Nano"`      // event time
 }
 
 // ===========================================================================
@@ -171,13 +171,13 @@ func (s *SubscribeTradeService) Do(ctx context.Context, cb func(*WsPush[[]WsTrad
 
 // WsTrade is one element of the "trade" channel data array.
 type WsTrade struct {
-	Symbol    string          `json:"symbol"`    // currency pair
-	Side      string          `json:"side"`      // buy or sell
-	Qty       decimal.Decimal `json:"qty"`       // executed quantity (base)
-	Price     decimal.Decimal `json:"price"`     // execution price
-	OrderType string          `json:"ord_type"`  // market or limit
-	TradeID   int64           `json:"trade_id"`  // trade id
-	Timestamp time.Time       `json:"timestamp"` // execution time
+	Symbol    string          `json:"symbol"`                       // currency pair
+	Side      string          `json:"side"`                         // buy or sell
+	Qty       decimal.Decimal `json:"qty"`                          // executed quantity (base)
+	Price     decimal.Decimal `json:"price"`                        // execution price
+	OrderType string          `json:"ord_type"`                     // market or limit
+	TradeID   int64           `json:"trade_id"`                     // trade id
+	Timestamp time.Time       `json:"timestamp,format:RFC3339Nano"` // execution time
 }
 
 // ===========================================================================

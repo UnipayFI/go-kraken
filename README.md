@@ -1,7 +1,7 @@
 # go-kraken
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/UnipayFI/go-kraken.svg)](https://pkg.go.dev/github.com/UnipayFI/go-kraken)
-[![Go 1.26+](https://img.shields.io/badge/Go-1.26%2B-00ADD8?logo=go)](go.mod)
+[![Go 1.27+](https://img.shields.io/badge/Go-1.27%2B-00ADD8?logo=go)](go.mod)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 A Go SDK for the [Kraken](https://docs.kraken.com/api/) spot exchange, covering the full Spot REST API.
@@ -18,11 +18,13 @@ Response structs are reconciled against the live API (not just the docs): every 
 go get github.com/UnipayFI/go-kraken@latest
 ```
 
+Requires Go 1.27 (see [JSON and timestamps](#json-and-timestamps)).
+
 ## Highlights
 
 - One signing/transport core shared by every endpoint (`client` + `request` + `common`).
 - Fluent per-endpoint API: `NewXxxService(...).SetFoo(...).Do(ctx)`.
-- Amounts as `decimal.Decimal`, timestamps as `time.Time` — Kraken's string-encoded numbers, UNIX-seconds (and the occasional RFC3339 / nanosecond) times, and `false`/`""`/`"0"` "not set" sentinels are decoded for you.
+- Amounts as `decimal.Decimal`, timestamps as `time.Time` whose wire format is declared by a `format` tag option (`json:"opentm,format:unix"`, `json:"timestamp,format:RFC3339Nano"`) — Kraken's string-encoded numbers, UNIX-seconds (and the occasional RFC3339 / nanosecond) times, and `false`/`""`/`"0"` "not set" sentinels are decoded for you.
 - Kraken's positional-array payloads (OHLC, order book, trades, spreads, ticker fields, fee tiers) are decoded into named struct fields.
 - Every endpoint is tested against the live API; trading is exercised with tiny, reversible, large-cap orders.
 
@@ -134,6 +136,30 @@ fmt.Println(ack.Result.OrderID)
 
 Public channels: `ticker`, `book`, `ohlc`, `trade`, `instrument`. Private channels: `executions`, `balances`, `level3` (per-order book; entitlement-gated).
 
+## JSON and timestamps
+
+The SDK uses Go 1.27's `encoding/json/v2` (keep the default `jsonv2` GOEXPERIMENT enabled; without it the SDK does not
+compile). Every `time.Time` field declares the format Kraken actually sends with the `format` tag option — `format:unix`
+for UNIX seconds (e.g. `json:"opentm,format:unix"`), `format:RFC3339` / `format:RFC3339Nano` for RFC 3339 strings,
+`format:unixnano` for nanoseconds — experimental in Go 1.27, and enabled by the SDK's codec. `common.JSONMarshal` /
+`common.JSONUnmarshal` apply that option's semantics plus Kraken's quirks: unix values are read quoted or bare and written
+bare, with sub-second digits kept exactly (not truncated, and no longer rounded through `float64`), and `0`/`"0"`/`""`/`null`
+read as the zero time, which is written as `0` (unix formats) or `"0"` (RFC 3339). Decoded times are in UTC — use `.Equal`
+to compare and `.In(loc)` / `.Local()` to display. The time columns of the positional arrays (OHLC candles, trades,
+spreads, order-book levels) and the OHLC/spread `Last` cursors are UNIX seconds too; `common.UnmarshalUnixTime` /
+`common.MarshalUnixTime` decode and encode such untagged values.
+
+A `time.Time` without a `format` option is RFC 3339, as in the standard library. That includes your own types passed
+through `common.JSONMarshal` / `common.JSONUnmarshal` or the `request` helpers, which earlier versions decoded from UNIX
+seconds or RFC 3339, whichever arrived: tag such fields `format:unix` or `format:RFC3339`.
+
+Go 1.27 only honours `format` tags when the experimental `ExperimentalSupportFormatTag` option is passed, so serialize SDK
+types with `common.JSONMarshal` / `common.JSONUnmarshal`. Where you only need `encoding/json/v2` to accept the tags (say, to
+store or log SDK values), you can pass `github.com/go-json-experiment/json.ExperimentalSupportFormatTag(true)` yourself;
+that applies the option's plain semantics (bare numbers only, no `0`/`"0"`/`""` sentinels — a `0` silently becomes
+1970-01-01), so it cannot read Kraken's wire data or the zero times the SDK writes. Plain `encoding/json` returns an error
+for structs with `format` tags, and `log/slog`'s JSON handler logs `!ERROR:...` in place of such a value.
+
 ## Packages
 
 **Spot REST** (root package `kraken`)
@@ -167,7 +193,7 @@ Public channels: `ticker`, `book`, `ohlc`, `trade`, `instrument`. Private channe
 | `kraken.go` | entry point: `NewClient` (REST) + `NewWebSocketClient` (in `ws.go`) |
 | `client/` | REST + WebSocket clients, options, nonce generator, HMAC-SHA512 signer config, WS token cache, `APIError`, `ProblemError` |
 | `request/` | request builder (form-urlencoded / signed GET), generic `Do[T]` envelope decode + `DoBare[T]`, signer, WS subscribe/order-entry framework |
-| `common/` | constants, global `time.Time` (UNIX-seconds/RFC3339) + `decimal.Decimal` JSON codec |
+| `common/` | constants, `encoding/json/v2` codec: `format`-tagged `time.Time` + `decimal.Decimal` |
 | `internal/apitest/` | test-only field-coverage helpers |
 | `cmd/kraw/` | dev tool: sign + dump any endpoint's raw response |
 

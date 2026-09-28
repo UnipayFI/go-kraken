@@ -2,10 +2,10 @@ package kraken
 
 import (
 	"context"
+	"encoding/json/jsontext"
 	"time"
 
 	"github.com/UnipayFI/go-kraken/request"
-	"github.com/go-json-experiment/json/jsontext"
 	"github.com/shopspring/decimal"
 )
 
@@ -286,8 +286,8 @@ func (t *TradeConn) CancelAllOrdersAfter(ctx context.Context, timeout int) (*WsT
 
 // WsCancelAllAfterResult is the cancel_all_orders_after result.
 type WsCancelAllAfterResult struct {
-	CurrentTime time.Time `json:"currentTime"` // when the request was received
-	TriggerTime time.Time `json:"triggerTime"` // when orders will be cancelled
+	CurrentTime time.Time `json:"currentTime,format:RFC3339"` // when the request was received
+	TriggerTime time.Time `json:"triggerTime,format:RFC3339"` // when orders will be cancelled
 }
 
 // ===========================================================================

@@ -101,17 +101,17 @@ func (s *GetDailyActivityService) Do(ctx context.Context) (*DailyActivity, error
 // decimal strings in Currency (the reporting currency, not the payout asset).
 // Day-wide payable is Totals plus OptedOut.Summary when Summary is set.
 type DailyActivity struct {
-	ActivityDate string                     `json:"activity_date"` // day variant only: the UTC trade date every item shares
-	Currency     string                     `json:"currency"`      // reporting currency for every monetary figure (always USD today)
-	Revision     time.Time                  `json:"revision"`      // day variant, first page: when these figures were last written; zero when no rows
-	GeneratedAt  time.Time                  `json:"generated_at"`  // response generation time
-	ActiveUsers  int64                      `json:"active_users"`  // day variant, first page: visible enrolled users that day
-	Totals       map[string]ProductActivity `json:"totals"`        // day variant, first page: totals for visible users, keyed by product
-	NextCursor   string                     `json:"next_cursor"`   // present when more results exist; pass to SetCursor
-	Items        []DailyActivityItem        `json:"items"`         // one entry per referred user (per day in the history variant)
-	Estimated    bool                       `json:"estimated"`     // day variant, first page: amounts are still an estimate
-	OptedOut     *OptedOutActivity          `json:"opted_out"`     // day variant, first page: opted-out remainder
-	Limit        int                        `json:"limit"`         // page size used for this response
+	ActivityDate string                     `json:"activity_date"`               // day variant only: the UTC trade date every item shares
+	Currency     string                     `json:"currency"`                    // reporting currency for every monetary figure (always USD today)
+	Revision     time.Time                  `json:"revision,format:RFC3339"`     // day variant, first page: when these figures were last written; zero when no rows
+	GeneratedAt  time.Time                  `json:"generated_at,format:RFC3339"` // response generation time
+	ActiveUsers  int64                      `json:"active_users"`                // day variant, first page: visible enrolled users that day
+	Totals       map[string]ProductActivity `json:"totals"`                      // day variant, first page: totals for visible users, keyed by product
+	NextCursor   string                     `json:"next_cursor"`                 // present when more results exist; pass to SetCursor
+	Items        []DailyActivityItem        `json:"items"`                       // one entry per referred user (per day in the history variant)
+	Estimated    bool                       `json:"estimated"`                   // day variant, first page: amounts are still an estimate
+	OptedOut     *OptedOutActivity          `json:"opted_out"`                   // day variant, first page: opted-out remainder
+	Limit        int                        `json:"limit"`                       // page size used for this response
 }
 
 // DailyActivityItem is one referred user's activity, by plan and then product.
@@ -125,14 +125,14 @@ type DailyActivityItem struct {
 
 // ReferralPlan is one of the caller's reward plans a referred user is enrolled in.
 type ReferralPlan struct {
-	ReferralCode  string                     `json:"referral_code"`  // referral code
-	Campaign      string                     `json:"campaign"`       // enrollment suffix, not the plan name
-	ReferralLevel int                        `json:"referral_level"` // referral level
-	EnrolledAt    time.Time                  `json:"enrolled_at"`    // enrollment time, truncated to the hour
-	Status        string                     `json:"status"`         // open vocabulary; "active" and "completed" are payable
-	Earning       bool                       `json:"earning"`        // whether this plan currently pays the caller
-	ExpiresAt     time.Time                  `json:"expires_at"`     // plan expiry
-	Products      map[string]ProductActivity `json:"products"`       // activity keyed by product (see AffiliateProduct*)
+	ReferralCode  string                     `json:"referral_code"`              // referral code
+	Campaign      string                     `json:"campaign"`                   // enrollment suffix, not the plan name
+	ReferralLevel int                        `json:"referral_level"`             // referral level
+	EnrolledAt    time.Time                  `json:"enrolled_at,format:RFC3339"` // enrollment time, truncated to the hour
+	Status        string                     `json:"status"`                     // open vocabulary; "active" and "completed" are payable
+	Earning       bool                       `json:"earning"`                    // whether this plan currently pays the caller
+	ExpiresAt     time.Time                  `json:"expires_at,format:RFC3339"`  // plan expiry
+	Products      map[string]ProductActivity `json:"products"`                   // activity keyed by product (see AffiliateProduct*)
 }
 
 // ProductActivity is payable activity for one product. GeoBlocked is an extra

@@ -525,8 +525,8 @@ func (s *CancelAllOrdersAfterService) Do(ctx context.Context) (*CancelAllOrdersA
 
 // CancelAllOrdersAfterResult is the CancelAllOrdersAfter response.
 type CancelAllOrdersAfterResult struct {
-	CurrentTime time.Time `json:"currentTime"` // when the request was received (RFC3339)
-	TriggerTime time.Time `json:"triggerTime"` // when orders will be cancelled (RFC3339)
+	CurrentTime time.Time `json:"currentTime,format:RFC3339"` // when the request was received (RFC3339)
+	TriggerTime time.Time `json:"triggerTime,format:RFC3339"` // when orders will be cancelled (RFC3339)
 }
 
 // ===========================================================================

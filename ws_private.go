@@ -55,43 +55,43 @@ func (s *SubscribeExecutionsService) Do(ctx context.Context, cb func(*WsPush[[]W
 // fill event. Fields are populated according to exec_type; many are present only
 // for the relevant event.
 type WsExecution struct {
-	OrderID       string           `json:"order_id"`       // Kraken order id
-	OrderUserRef  int64            `json:"order_userref"`  // client numeric reference
-	ClientOrderID string           `json:"cl_ord_id"`      // client order id
-	ExecID        string           `json:"exec_id"`        // execution id
-	TradeID       int64            `json:"trade_id"`       // trade id (fills)
-	ExecType      string           `json:"exec_type"`      // new, filled, canceled, expired, trade, ...
-	OrderStatus   string           `json:"order_status"`   // pending, open, closed, canceled, expired
-	OrderType     string           `json:"order_type"`     // limit, market, ...
-	Symbol        string           `json:"symbol"`         // currency pair
-	Side          string           `json:"side"`           // buy or sell
-	TimeInForce   string           `json:"time_in_force"`  // gtc, ioc, gtd
-	OrderQty      decimal.Decimal  `json:"order_qty"`      // order quantity (base)
-	CumQty        decimal.Decimal  `json:"cum_qty"`        // cumulative filled quantity
-	LastQty       decimal.Decimal  `json:"last_qty"`       // quantity of the last fill
-	DisplayQty    decimal.Decimal  `json:"display_qty"`    // iceberg display quantity
-	LimitPrice    decimal.Decimal  `json:"limit_price"`    // limit price
-	StopPrice     decimal.Decimal  `json:"stop_price"`     // stop/trigger price
-	AvgPrice      decimal.Decimal  `json:"avg_price"`      // average fill price
-	LastPrice     decimal.Decimal  `json:"last_price"`     // last fill price
-	Cost          decimal.Decimal  `json:"cost"`           // cost of the last fill
-	CumCost       decimal.Decimal  `json:"cum_cost"`       // cumulative cost
-	FeeUSDEquiv   decimal.Decimal  `json:"fee_usd_equiv"`  // fee in USD equivalent
-	FeeCcyPref    string           `json:"fee_ccy_pref"`   // fee currency preference
-	Fees          []WsExecutionFee `json:"fees"`           // fees charged
-	PostOnly      bool             `json:"post_only"`      // post-only flag
-	ReduceOnly    bool             `json:"reduce_only"`    // reduce-only flag
-	Margin        bool             `json:"margin"`         // funded on margin
-	Liquidated    bool             `json:"liquidated"`     // resulted from a liquidation
-	Amended       bool             `json:"amended"`        // order was amended
-	LiquidityInd  string           `json:"liquidity_ind"`  // maker (m) or taker (t)
-	Timestamp     time.Time        `json:"timestamp"`      // event time
-	EffectiveTime time.Time        `json:"effective_time"` // scheduled start time
-	ExpireTime    time.Time        `json:"expire_time"`    // expiry time
-	Reason        string           `json:"reason"`         // status reason
-	CancelReason  string           `json:"cancel_reason"`  // cancellation reason
-	SenderSubID   string           `json:"sender_sub_id"`  // STP sub-account id
-	Triggers      *WsExecTriggers  `json:"triggers"`       // trigger details (conditional orders)
+	OrderID       string           `json:"order_id"`                          // Kraken order id
+	OrderUserRef  int64            `json:"order_userref"`                     // client numeric reference
+	ClientOrderID string           `json:"cl_ord_id"`                         // client order id
+	ExecID        string           `json:"exec_id"`                           // execution id
+	TradeID       int64            `json:"trade_id"`                          // trade id (fills)
+	ExecType      string           `json:"exec_type"`                         // new, filled, canceled, expired, trade, ...
+	OrderStatus   string           `json:"order_status"`                      // pending, open, closed, canceled, expired
+	OrderType     string           `json:"order_type"`                        // limit, market, ...
+	Symbol        string           `json:"symbol"`                            // currency pair
+	Side          string           `json:"side"`                              // buy or sell
+	TimeInForce   string           `json:"time_in_force"`                     // gtc, ioc, gtd
+	OrderQty      decimal.Decimal  `json:"order_qty"`                         // order quantity (base)
+	CumQty        decimal.Decimal  `json:"cum_qty"`                           // cumulative filled quantity
+	LastQty       decimal.Decimal  `json:"last_qty"`                          // quantity of the last fill
+	DisplayQty    decimal.Decimal  `json:"display_qty"`                       // iceberg display quantity
+	LimitPrice    decimal.Decimal  `json:"limit_price"`                       // limit price
+	StopPrice     decimal.Decimal  `json:"stop_price"`                        // stop/trigger price
+	AvgPrice      decimal.Decimal  `json:"avg_price"`                         // average fill price
+	LastPrice     decimal.Decimal  `json:"last_price"`                        // last fill price
+	Cost          decimal.Decimal  `json:"cost"`                              // cost of the last fill
+	CumCost       decimal.Decimal  `json:"cum_cost"`                          // cumulative cost
+	FeeUSDEquiv   decimal.Decimal  `json:"fee_usd_equiv"`                     // fee in USD equivalent
+	FeeCcyPref    string           `json:"fee_ccy_pref"`                      // fee currency preference
+	Fees          []WsExecutionFee `json:"fees"`                              // fees charged
+	PostOnly      bool             `json:"post_only"`                         // post-only flag
+	ReduceOnly    bool             `json:"reduce_only"`                       // reduce-only flag
+	Margin        bool             `json:"margin"`                            // funded on margin
+	Liquidated    bool             `json:"liquidated"`                        // resulted from a liquidation
+	Amended       bool             `json:"amended"`                           // order was amended
+	LiquidityInd  string           `json:"liquidity_ind"`                     // maker (m) or taker (t)
+	Timestamp     time.Time        `json:"timestamp,format:RFC3339Nano"`      // event time
+	EffectiveTime time.Time        `json:"effective_time,format:RFC3339Nano"` // scheduled start time
+	ExpireTime    time.Time        `json:"expire_time,format:RFC3339Nano"`    // expiry time
+	Reason        string           `json:"reason"`                            // status reason
+	CancelReason  string           `json:"cancel_reason"`                     // cancellation reason
+	SenderSubID   string           `json:"sender_sub_id"`                     // STP sub-account id
+	Triggers      *WsExecTriggers  `json:"triggers"`                          // trigger details (conditional orders)
 }
 
 // WsExecutionFee is one fee charged on an execution.
@@ -102,14 +102,14 @@ type WsExecutionFee struct {
 
 // WsExecTriggers describes the trigger of a conditional order.
 type WsExecTriggers struct {
-	Reference   string          `json:"reference"`    // last or index
-	Price       decimal.Decimal `json:"price"`        // trigger price
-	PriceType   string          `json:"price_type"`   // static or pct
-	ActualPrice decimal.Decimal `json:"actual_price"` // resolved trigger price
-	PeakPrice   decimal.Decimal `json:"peak_price"`   // trailing peak price
-	LastPrice   decimal.Decimal `json:"last_price"`   // last reference price
-	Status      string          `json:"status"`       // untriggered or triggered
-	Timestamp   time.Time       `json:"timestamp"`    // trigger time
+	Reference   string          `json:"reference"`                    // last or index
+	Price       decimal.Decimal `json:"price"`                        // trigger price
+	PriceType   string          `json:"price_type"`                   // static or pct
+	ActualPrice decimal.Decimal `json:"actual_price"`                 // resolved trigger price
+	PeakPrice   decimal.Decimal `json:"peak_price"`                   // trailing peak price
+	LastPrice   decimal.Decimal `json:"last_price"`                   // last reference price
+	Status      string          `json:"status"`                       // untriggered or triggered
+	Timestamp   time.Time       `json:"timestamp,format:RFC3339Nano"` // trigger time
 }
 
 // ===========================================================================
@@ -146,16 +146,16 @@ type WsBalance struct {
 	Balance    decimal.Decimal   `json:"balance"`     // total balance
 	Wallets    []WsBalanceWallet `json:"wallets"`     // per-wallet breakdown (snapshot)
 	// Update-only ledger fields:
-	Amount     decimal.Decimal `json:"amount"`      // ledger amount (signed)
-	Fee        decimal.Decimal `json:"fee"`         // ledger fee
-	LedgerID   string          `json:"ledger_id"`   // ledger entry id
-	RefID      string          `json:"ref_id"`      // reference id
-	Timestamp  time.Time       `json:"timestamp"`   // ledger time
-	Type       string          `json:"type"`        // ledger type
-	SubType    string          `json:"subtype"`     // ledger subtype
-	Category   string          `json:"category"`    // ledger category
-	WalletType string          `json:"wallet_type"` // wallet type
-	WalletID   string          `json:"wallet_id"`   // wallet id
+	Amount     decimal.Decimal `json:"amount"`                       // ledger amount (signed)
+	Fee        decimal.Decimal `json:"fee"`                          // ledger fee
+	LedgerID   string          `json:"ledger_id"`                    // ledger entry id
+	RefID      string          `json:"ref_id"`                       // reference id
+	Timestamp  time.Time       `json:"timestamp,format:RFC3339Nano"` // ledger time
+	Type       string          `json:"type"`                         // ledger type
+	SubType    string          `json:"subtype"`                      // ledger subtype
+	Category   string          `json:"category"`                     // ledger category
+	WalletType string          `json:"wallet_type"`                  // wallet type
+	WalletID   string          `json:"wallet_id"`                    // wallet id
 }
 
 // WsBalanceWallet is one wallet's balance within a balances snapshot.
@@ -206,9 +206,9 @@ type WsLevel3 struct {
 
 // WsLevel3Order is one resting order in the level-3 book.
 type WsLevel3Order struct {
-	OrderID    string          `json:"order_id"`    // order id
-	LimitPrice decimal.Decimal `json:"limit_price"` // limit price
-	OrderQty   decimal.Decimal `json:"order_qty"`   // remaining quantity
-	Timestamp  time.Time       `json:"timestamp"`   // order timestamp
-	Event      string          `json:"event"`       // add, modify, delete
+	OrderID    string          `json:"order_id"`                     // order id
+	LimitPrice decimal.Decimal `json:"limit_price"`                  // limit price
+	OrderQty   decimal.Decimal `json:"order_qty"`                    // remaining quantity
+	Timestamp  time.Time       `json:"timestamp,format:RFC3339Nano"` // order timestamp
+	Event      string          `json:"event"`                        // add, modify, delete
 }

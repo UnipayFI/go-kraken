@@ -292,16 +292,16 @@ type EarnAllocationState struct {
 
 // EarnAllocationDetail is one individual allocation record within a state.
 type EarnAllocationDetail struct {
-	Native    decimal.Decimal `json:"native"`     // amount in the native asset
-	Converted decimal.Decimal `json:"converted"`  // amount in the converted asset
-	CreatedAt time.Time       `json:"created_at"` // when the allocation was created
-	Expires   time.Time       `json:"expires"`    // when bonding/unbonding completes
+	Native    decimal.Decimal `json:"native"`                     // amount in the native asset
+	Converted decimal.Decimal `json:"converted"`                  // amount in the converted asset
+	CreatedAt time.Time       `json:"created_at,format:RFC3339"`  // when the allocation was created
+	Expires   time.Time       `json:"expires,format:RFC3339Nano"` // when bonding/unbonding completes
 }
 
 // EarnPayout describes the current reward payout period.
 type EarnPayout struct {
-	AccumulatedReward EarnConvertedAmount `json:"accumulated_reward"` // reward accrued this period
-	EstimatedReward   EarnConvertedAmount `json:"estimated_reward"`   // estimated reward for the period
-	PeriodStart       time.Time           `json:"period_start"`       // start of the payout period
-	PeriodEnd         time.Time           `json:"period_end"`         // end of the payout period
+	AccumulatedReward EarnConvertedAmount `json:"accumulated_reward"`              // reward accrued this period
+	EstimatedReward   EarnConvertedAmount `json:"estimated_reward"`                // estimated reward for the period
+	PeriodStart       time.Time           `json:"period_start,format:RFC3339Nano"` // start of the payout period
+	PeriodEnd         time.Time           `json:"period_end,format:RFC3339Nano"`   // end of the payout period
 }

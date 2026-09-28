@@ -87,11 +87,11 @@ func (s *GetDepositAddressesService) Do(ctx context.Context) ([]DepositAddress, 
 
 // DepositAddress is one deposit address.
 type DepositAddress struct {
-	Address    string    `json:"address"`  // deposit address
-	ExpireTime time.Time `json:"expiretm"` // expiration time (zero if it does not expire)
-	New        bool      `json:"new"`      // whether the address was newly generated
-	Memo       string    `json:"memo"`     // memo for the deposit (some assets)
-	Tag        string    `json:"tag"`      // destination tag (some assets)
+	Address    string    `json:"address"`              // deposit address
+	ExpireTime time.Time `json:"expiretm,format:unix"` // expiration time (zero if it does not expire)
+	New        bool      `json:"new"`                  // whether the address was newly generated
+	Memo       string    `json:"memo"`                 // memo for the deposit (some assets)
+	Tag        string    `json:"tag"`                  // destination tag (some assets)
 }
 
 // ===========================================================================
@@ -137,19 +137,19 @@ func (s *GetDepositStatusService) Do(ctx context.Context) ([]TransferStatus, err
 // TransferStatus is one deposit or withdrawal record. Withdrawal-only fields
 // (key, network) are empty for deposits.
 type TransferStatus struct {
-	Method     string          `json:"method"`      // transfer method
-	AssetClass string          `json:"aclass"`      // asset class
-	Asset      string          `json:"asset"`       // asset
-	RefID      string          `json:"refid"`       // reference id
-	TxID       string          `json:"txid"`        // on-chain transaction id
-	Info       string          `json:"info"`        // address / info
-	Amount     decimal.Decimal `json:"amount"`      // amount
-	Fee        decimal.Decimal `json:"fee"`         // fee
-	Time       time.Time       `json:"time"`        // unix timestamp of the transfer
-	Status     string          `json:"status"`      // status (Success, Failure, Pending, ...)
-	StatusProp string          `json:"status-prop"` // additional status property (return, onhold, ...)
-	Key        string          `json:"key"`         // withdrawal key name (withdrawals only)
-	Network    string          `json:"network"`     // network (withdrawals only)
+	Method     string          `json:"method"`           // transfer method
+	AssetClass string          `json:"aclass"`           // asset class
+	Asset      string          `json:"asset"`            // asset
+	RefID      string          `json:"refid"`            // reference id
+	TxID       string          `json:"txid"`             // on-chain transaction id
+	Info       string          `json:"info"`             // address / info
+	Amount     decimal.Decimal `json:"amount"`           // amount
+	Fee        decimal.Decimal `json:"fee"`              // fee
+	Time       time.Time       `json:"time,format:unix"` // unix timestamp of the transfer
+	Status     string          `json:"status"`           // status (Success, Failure, Pending, ...)
+	StatusProp string          `json:"status-prop"`      // additional status property (return, onhold, ...)
+	Key        string          `json:"key"`              // withdrawal key name (withdrawals only)
+	Network    string          `json:"network"`          // network (withdrawals only)
 }
 
 // ===========================================================================

@@ -1,10 +1,9 @@
 package client
 
 import (
+	"encoding/json/jsontext"
 	"fmt"
 	"strings"
-
-	"github.com/go-json-experiment/json/jsontext"
 )
 
 // APIError is the error envelope Kraken returns. Every REST response carries an

@@ -2,6 +2,7 @@ package kraken
 
 import (
 	"context"
+	"encoding/json/jsontext"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/UnipayFI/go-kraken/common"
 	"github.com/UnipayFI/go-kraken/request"
-	"github.com/go-json-experiment/json/jsontext"
 	"github.com/shopspring/decimal"
 )
 
@@ -20,8 +20,9 @@ import (
 // ticker sub-fields as fixed-position JSON arrays of mixed string/number types.
 // decodeColumns / encodeColumns convert between such an array and a set of named
 // destination pointers, decoding each element through the global codec so that
-// decimal.Decimal (string-or-number) and time.Time (unix-seconds) fields parse
-// uniformly.
+// decimal.Decimal (string-or-number) fields parse uniformly. A column has no
+// struct tag to declare `format:unix`, so time.Time columns go through
+// common.UnmarshalUnixTime / common.MarshalUnixTime instead.
 // ---------------------------------------------------------------------------
 
 func decodeColumns(data []byte, want int, dst ...any) error {
@@ -33,7 +34,13 @@ func decodeColumns(data []byte, want int, dst ...any) error {
 		return fmt.Errorf("kraken: tuple has %d columns, want %d", len(row), want)
 	}
 	for i, d := range dst {
-		if err := common.JSONUnmarshal(row[i], d); err != nil {
+		var err error
+		if t, ok := d.(*time.Time); ok {
+			err = common.UnmarshalUnixTime(row[i], t)
+		} else {
+			err = common.JSONUnmarshal(row[i], d)
+		}
+		if err != nil {
 			return fmt.Errorf("kraken: tuple column %d: %w", i, err)
 		}
 	}
@@ -41,6 +48,11 @@ func decodeColumns(data []byte, want int, dst ...any) error {
 }
 
 func encodeColumns(cols ...any) ([]byte, error) {
+	for i, c := range cols {
+		if t, ok := c.(time.Time); ok {
+			cols[i] = common.MarshalUnixTime(t)
+		}
+	}
 	return common.JSONMarshal(cols)
 }
 
@@ -82,8 +94,8 @@ func (s *GetServerTimeService) Do(ctx context.Context) (*ServerTime, error) {
 
 // ServerTime is the GET /0/public/Time payload.
 type ServerTime struct {
-	UnixTime time.Time `json:"unixtime"` // server time as unix seconds
-	RFC1123  string    `json:"rfc1123"`  // server time as an RFC 1123 string
+	UnixTime time.Time `json:"unixtime,format:unix"` // server time as unix seconds
+	RFC1123  string    `json:"rfc1123"`              // server time as an RFC 1123 string
 }
 
 // ===========================================================================
@@ -106,10 +118,10 @@ func (s *GetSystemStatusService) Do(ctx context.Context) (*SystemStatus, error) 
 
 // SystemStatus is the GET /0/public/SystemStatus payload.
 type SystemStatus struct {
-	Status              string              `json:"status"`               // online | maintenance | cancel_only | post_only
-	Timestamp           time.Time           `json:"timestamp"`            // RFC3339 time the status was last updated
-	UpcomingMaintenance []MaintenanceEvent  `json:"upcoming_maintenance"` // scheduled events within the next 72h, earliest first; empty or absent when no advisory is active
-	Emergency           []EmergencyAdvisory `json:"emergency"`            // unresolved incidents; empty or absent when no advisory is active
+	Status              string              `json:"status"`                   // online | maintenance | cancel_only | post_only
+	Timestamp           time.Time           `json:"timestamp,format:RFC3339"` // RFC3339 time the status was last updated
+	UpcomingMaintenance []MaintenanceEvent  `json:"upcoming_maintenance"`     // scheduled events within the next 72h, earliest first; empty or absent when no advisory is active
+	Emergency           []EmergencyAdvisory `json:"emergency"`                // unresolved incidents; empty or absent when no advisory is active
 }
 
 // MaintenanceEvent is one scheduled-maintenance advisory, shared by
@@ -117,17 +129,17 @@ type SystemStatus struct {
 // are additive: SystemStatus.Status keeps being driven by the trading engine,
 // an advisory only explains why a state is happening or coming.
 type MaintenanceEvent struct {
-	EventID           int64     `json:"event_id"`           // event identifier, stable across phase transitions
-	Title             string    `json:"title"`              // human-readable title from the status page
-	ExpectedStartUTC  time.Time `json:"expected_start_utc"` // maintenance window start
-	ExpectedEndUTC    time.Time `json:"expected_end_utc"`   // maintenance window end
-	TimeToStartSec    int64     `json:"time_to_start_s"`    // time until the window starts (seconds), evaluated when the response is served; responses are cacheable, so derive live countdowns from ExpectedStartUTC instead
-	Phase             string    `json:"phase"`              // announced | reminder_24h | approaching_30m | imminent_5m | final_warning_30s, derived from the time remaining
-	AffectedServices  []string  `json:"affected_services"`  // spot_ws, spot_rest, spot_fix, spot_trading, futures_ws, futures_rest, futures_fix, futures_trading, all
-	OrderSubmission   string    `json:"order_submission"`   // allowed | discouraged | blocked
-	RecommendedAction string    `json:"recommended_action"` // continue | reduce_activity | cancel_open_orders | stop_new_orders
-	CancelBeforeUTC   time.Time `json:"cancel_before_utc"`  // ExpectedStartUTC minus 5 minutes while the event is scheduled, zero otherwise
-	SourceURL         string    `json:"source_url"`         // status page permalink
+	EventID           int64     `json:"event_id"`                          // event identifier, stable across phase transitions
+	Title             string    `json:"title"`                             // human-readable title from the status page
+	ExpectedStartUTC  time.Time `json:"expected_start_utc,format:RFC3339"` // maintenance window start
+	ExpectedEndUTC    time.Time `json:"expected_end_utc,format:RFC3339"`   // maintenance window end
+	TimeToStartSec    int64     `json:"time_to_start_s"`                   // time until the window starts (seconds), evaluated when the response is served; responses are cacheable, so derive live countdowns from ExpectedStartUTC instead
+	Phase             string    `json:"phase"`                             // announced | reminder_24h | approaching_30m | imminent_5m | final_warning_30s, derived from the time remaining
+	AffectedServices  []string  `json:"affected_services"`                 // spot_ws, spot_rest, spot_fix, spot_trading, futures_ws, futures_rest, futures_fix, futures_trading, all
+	OrderSubmission   string    `json:"order_submission"`                  // allowed | discouraged | blocked
+	RecommendedAction string    `json:"recommended_action"`                // continue | reduce_activity | cancel_open_orders | stop_new_orders
+	CancelBeforeUTC   time.Time `json:"cancel_before_utc,format:RFC3339"`  // ExpectedStartUTC minus 5 minutes while the event is scheduled, zero otherwise
+	SourceURL         string    `json:"source_url"`                        // status page permalink
 }
 
 // EmergencyAdvisory is one unresolved-incident advisory from
@@ -135,22 +147,22 @@ type MaintenanceEvent struct {
 // cleared once the incident resolves. It carries no order guidance -- derive
 // that from IncidentStatus, NextSteps and SystemStatus.Status.
 type EmergencyAdvisory struct {
-	EventID          int64              `json:"event_id"`          // incident identifier
-	Title            string             `json:"title"`             // human-readable title from the status page
-	IncidentStatus   string             `json:"incident_status"`   // investigating | identified | monitoring
-	Impact           string             `json:"impact"`            // none | minor | major | critical
-	AffectedServices []string           `json:"affected_services"` // affected surfaces, same tokens as MaintenanceEvent.AffectedServices
-	StartedAtUTC     time.Time          `json:"started_at_utc"`    // incident start
-	NextSteps        []AdvisoryNextStep `json:"next_steps"`        // forecast actions, earliest first; empty when no forecast has been published
-	SourceURL        string             `json:"source_url"`        // status page permalink
+	EventID          int64              `json:"event_id"`                          // incident identifier
+	Title            string             `json:"title"`                             // human-readable title from the status page
+	IncidentStatus   string             `json:"incident_status"`                   // investigating | identified | monitoring
+	Impact           string             `json:"impact"`                            // none | minor | major | critical
+	AffectedServices []string           `json:"affected_services"`                 // affected surfaces, same tokens as MaintenanceEvent.AffectedServices
+	StartedAtUTC     time.Time          `json:"started_at_utc,format:RFC3339Nano"` // incident start
+	NextSteps        []AdvisoryNextStep `json:"next_steps"`                        // forecast actions, earliest first; empty when no forecast has been published
+	SourceURL        string             `json:"source_url"`                        // status page permalink
 }
 
 // AdvisoryNextStep is one forecast operational action in
 // EmergencyAdvisory.NextSteps.
 type AdvisoryNextStep struct {
-	AppliesTo     []string  `json:"applies_to"`      // affected surfaces this step applies to
-	Type          string    `json:"type"`            // expected_restart | expected_cancel_only | expected_post_only | expected_online
-	ExpectedAtUTC time.Time `json:"expected_at_utc"` // forecast time for the action
+	AppliesTo     []string  `json:"applies_to"`                     // affected surfaces this step applies to
+	Type          string    `json:"type"`                           // expected_restart | expected_cancel_only | expected_post_only | expected_online
+	ExpectedAtUTC time.Time `json:"expected_at_utc,format:RFC3339"` // forecast time for the action
 }
 
 // ===========================================================================
@@ -457,7 +469,7 @@ func (r *OHLCResult) UnmarshalJSON(data []byte) error {
 	}
 	r.Pair = pair
 	if len(last) > 0 {
-		if err := common.JSONUnmarshal(last, &r.Last); err != nil {
+		if err := common.UnmarshalUnixTime(last, &r.Last); err != nil {
 			return err
 		}
 	}
@@ -468,7 +480,7 @@ func (r *OHLCResult) UnmarshalJSON(data []byte) error {
 }
 
 func (r OHLCResult) MarshalJSON() ([]byte, error) {
-	return common.JSONMarshal(map[string]any{r.Pair: r.Candles, "last": r.Last})
+	return common.JSONMarshal(map[string]any{r.Pair: r.Candles, "last": common.MarshalUnixTime(r.Last)})
 }
 
 // Candle is one OHLC row: [time, open, high, low, close, vwap, volume, count].
@@ -668,7 +680,7 @@ func (r *SpreadResult) UnmarshalJSON(data []byte) error {
 	}
 	r.Pair = pair
 	if len(last) > 0 {
-		if err := common.JSONUnmarshal(last, &r.Last); err != nil {
+		if err := common.UnmarshalUnixTime(last, &r.Last); err != nil {
 			return err
 		}
 	}
@@ -679,7 +691,7 @@ func (r *SpreadResult) UnmarshalJSON(data []byte) error {
 }
 
 func (r SpreadResult) MarshalJSON() ([]byte, error) {
-	return common.JSONMarshal(map[string]any{r.Pair: r.Spreads, "last": r.Last})
+	return common.JSONMarshal(map[string]any{r.Pair: r.Spreads, "last": common.MarshalUnixTime(r.Last)})
 }
 
 // Spread is one bid/ask spread sample: [time, bid, ask].

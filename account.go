@@ -130,43 +130,43 @@ type OrderDescription struct {
 // and QueryOrders. Optional fields (closetm, reason, margin, trigger,
 // sender_sub_id, trades) appear only in the relevant context.
 type OrderInfo struct {
-	RefID          string           `json:"refid"`         // referral order tx id that created this order (nullable)
-	UserRef        int64            `json:"userref"`       // optional client identifier (nullable)
-	ClientOrderID  string           `json:"cl_ord_id"`     // optional alphanumeric client identifier (nullable)
-	Status         string           `json:"status"`        // pending, open, closed, canceled, expired
-	Reason         string           `json:"reason"`        // reason order was closed/canceled (nullable)
-	OpenTime       time.Time        `json:"opentm"`        // time order was placed
-	StartTime      time.Time        `json:"starttm"`       // order start time (0 if not set)
-	ExpireTime     time.Time        `json:"expiretm"`      // order end time (0 if not set)
-	CloseTime      time.Time        `json:"closetm"`       // time order was closed (ClosedOrders/QueryOrders)
-	Description    OrderDescription `json:"descr"`         // order description
-	Volume         decimal.Decimal  `json:"vol"`           // order volume (base currency)
-	VolumeExecuted decimal.Decimal  `json:"vol_exec"`      // volume executed (base currency)
-	Cost           decimal.Decimal  `json:"cost"`          // total cost (quote currency)
-	Fee            decimal.Decimal  `json:"fee"`           // total fee (quote currency)
-	Price          decimal.Decimal  `json:"price"`         // average price (quote currency)
-	StopPrice      decimal.Decimal  `json:"stopprice"`     // stop price (quote currency)
-	LimitPrice     decimal.Decimal  `json:"limitprice"`    // triggered limit price (quote currency)
-	Trigger        string           `json:"trigger"`       // price signal for stop/take-profit: last or index
-	Margin         bool             `json:"margin"`        // whether order is funded on margin
-	Misc           string           `json:"misc"`          // comma-delimited misc info (stopped, touched, ...)
-	SenderSubID    string           `json:"sender_sub_id"` // underlying sub-account for STP (nullable)
-	OrderFlags     string           `json:"oflags"`        // comma-delimited order flags (post, fcib, fciq, ...)
-	TimeInForce    string           `json:"time_in_force"` // gtc, ioc, gtd, fok
-	Trades         []string         `json:"trades"`        // related trade ids (if requested and available)
+	RefID          string           `json:"refid"`                // referral order tx id that created this order (nullable)
+	UserRef        int64            `json:"userref"`              // optional client identifier (nullable)
+	ClientOrderID  string           `json:"cl_ord_id"`            // optional alphanumeric client identifier (nullable)
+	Status         string           `json:"status"`               // pending, open, closed, canceled, expired
+	Reason         string           `json:"reason"`               // reason order was closed/canceled (nullable)
+	OpenTime       time.Time        `json:"opentm,format:unix"`   // time order was placed
+	StartTime      time.Time        `json:"starttm,format:unix"`  // order start time (0 if not set)
+	ExpireTime     time.Time        `json:"expiretm,format:unix"` // order end time (0 if not set)
+	CloseTime      time.Time        `json:"closetm,format:unix"`  // time order was closed (ClosedOrders/QueryOrders)
+	Description    OrderDescription `json:"descr"`                // order description
+	Volume         decimal.Decimal  `json:"vol"`                  // order volume (base currency)
+	VolumeExecuted decimal.Decimal  `json:"vol_exec"`             // volume executed (base currency)
+	Cost           decimal.Decimal  `json:"cost"`                 // total cost (quote currency)
+	Fee            decimal.Decimal  `json:"fee"`                  // total fee (quote currency)
+	Price          decimal.Decimal  `json:"price"`                // average price (quote currency)
+	StopPrice      decimal.Decimal  `json:"stopprice"`            // stop price (quote currency)
+	LimitPrice     decimal.Decimal  `json:"limitprice"`           // triggered limit price (quote currency)
+	Trigger        string           `json:"trigger"`              // price signal for stop/take-profit: last or index
+	Margin         bool             `json:"margin"`               // whether order is funded on margin
+	Misc           string           `json:"misc"`                 // comma-delimited misc info (stopped, touched, ...)
+	SenderSubID    string           `json:"sender_sub_id"`        // underlying sub-account for STP (nullable)
+	OrderFlags     string           `json:"oflags"`               // comma-delimited order flags (post, fcib, fciq, ...)
+	TimeInForce    string           `json:"time_in_force"`        // gtc, ioc, gtd, fok
+	Trades         []string         `json:"trades"`               // related trade ids (if requested and available)
 }
 
 // LedgerEntry is one ledger record.
 type LedgerEntry struct {
-	RefID      string          `json:"refid"`   // reference id
-	Time       time.Time       `json:"time"`    // time of ledger entry
-	Type       string          `json:"type"`    // deposit, withdrawal, trade, margin, rollover, ...
-	SubType    string          `json:"subtype"` // additional info on the type
-	AssetClass string          `json:"aclass"`  // asset class
-	Asset      string          `json:"asset"`   // asset
-	Amount     decimal.Decimal `json:"amount"`  // transaction amount (signed)
-	Fee        decimal.Decimal `json:"fee"`     // transaction fee
-	Balance    decimal.Decimal `json:"balance"` // resulting balance
+	RefID      string          `json:"refid"`            // reference id
+	Time       time.Time       `json:"time,format:unix"` // time of ledger entry
+	Type       string          `json:"type"`             // deposit, withdrawal, trade, margin, rollover, ...
+	SubType    string          `json:"subtype"`          // additional info on the type
+	AssetClass string          `json:"aclass"`           // asset class
+	Asset      string          `json:"asset"`            // asset
+	Amount     decimal.Decimal `json:"amount"`           // transaction amount (signed)
+	Fee        decimal.Decimal `json:"fee"`              // transaction fee
+	Balance    decimal.Decimal `json:"balance"`          // resulting balance
 }
 
 // ===========================================================================
@@ -371,32 +371,32 @@ type OrderAmend struct {
 // QueryTrades. Position-close fields (cprice, ccost, ...) appear only when the
 // trade closed a margin position.
 type TradeHistoryEntry struct {
-	OrderTxID      string          `json:"ordertxid"`      // order responsible for the trade
-	PositionTxID   string          `json:"postxid"`        // position responsible for the trade
-	Pair           string          `json:"pair"`           // asset pair
-	Time           time.Time       `json:"time"`           // time of trade
-	Type           string          `json:"type"`           // buy or sell
-	OrderType      string          `json:"ordertype"`      // order type
-	Price          decimal.Decimal `json:"price"`          // average execution price (quote currency)
-	Cost           decimal.Decimal `json:"cost"`           // total cost (quote currency)
-	Fee            decimal.Decimal `json:"fee"`            // total fee (quote currency)
-	Volume         decimal.Decimal `json:"vol"`            // volume (base currency)
-	Margin         decimal.Decimal `json:"margin"`         // initial margin (quote currency)
-	Leverage       decimal.Decimal `json:"leverage"`       // amount of leverage used
-	Misc           string          `json:"misc"`           // comma-delimited misc info
-	TradeID        int64           `json:"trade_id"`       // unique trade id
-	Maker          bool            `json:"maker"`          // true if maker, false if taker
-	AssetClass     string          `json:"aclass"`         // asset class of the traded pair
-	TradeOrderType string          `json:"tradeordertype"` // actual execution order type (may differ)
-	PositionStatus string          `json:"posstatus"`      // position status (only if trade opened a position)
-	ClosedPrice    decimal.Decimal `json:"cprice"`         // avg price of closed portion of position
-	ClosedCost     decimal.Decimal `json:"ccost"`          // total cost of closed portion of position
-	ClosedFee      decimal.Decimal `json:"cfee"`           // total fee of closed portion of position
-	ClosedVolume   decimal.Decimal `json:"cvol"`           // total volume of closed portion of position
-	ClosedMargin   decimal.Decimal `json:"cmargin"`        // total margin freed in closed portion
-	Net            decimal.Decimal `json:"net"`            // net profit/loss of closed portion
-	ClosingTrades  []string        `json:"trades"`         // list of closing trades for position
-	Ledgers        []string        `json:"ledgers"`        // related ledger ids (if requested)
+	OrderTxID      string          `json:"ordertxid"`        // order responsible for the trade
+	PositionTxID   string          `json:"postxid"`          // position responsible for the trade
+	Pair           string          `json:"pair"`             // asset pair
+	Time           time.Time       `json:"time,format:unix"` // time of trade
+	Type           string          `json:"type"`             // buy or sell
+	OrderType      string          `json:"ordertype"`        // order type
+	Price          decimal.Decimal `json:"price"`            // average execution price (quote currency)
+	Cost           decimal.Decimal `json:"cost"`             // total cost (quote currency)
+	Fee            decimal.Decimal `json:"fee"`              // total fee (quote currency)
+	Volume         decimal.Decimal `json:"vol"`              // volume (base currency)
+	Margin         decimal.Decimal `json:"margin"`           // initial margin (quote currency)
+	Leverage       decimal.Decimal `json:"leverage"`         // amount of leverage used
+	Misc           string          `json:"misc"`             // comma-delimited misc info
+	TradeID        int64           `json:"trade_id"`         // unique trade id
+	Maker          bool            `json:"maker"`            // true if maker, false if taker
+	AssetClass     string          `json:"aclass"`           // asset class of the traded pair
+	TradeOrderType string          `json:"tradeordertype"`   // actual execution order type (may differ)
+	PositionStatus string          `json:"posstatus"`        // position status (only if trade opened a position)
+	ClosedPrice    decimal.Decimal `json:"cprice"`           // avg price of closed portion of position
+	ClosedCost     decimal.Decimal `json:"ccost"`            // total cost of closed portion of position
+	ClosedFee      decimal.Decimal `json:"cfee"`             // total fee of closed portion of position
+	ClosedVolume   decimal.Decimal `json:"cvol"`             // total volume of closed portion of position
+	ClosedMargin   decimal.Decimal `json:"cmargin"`          // total margin freed in closed portion
+	Net            decimal.Decimal `json:"net"`              // net profit/loss of closed portion
+	ClosingTrades  []string        `json:"trades"`           // list of closing trades for position
+	Ledgers        []string        `json:"ledgers"`          // related ledger ids (if requested)
 }
 
 // GetTradesHistoryService returns the account's trade history with pagination.
@@ -558,24 +558,24 @@ func (s *GetOpenPositionsService) Do(ctx context.Context) (map[string]PositionIn
 
 // PositionInfo is one open margin position.
 type PositionInfo struct {
-	OrderTxID      string          `json:"ordertxid"`  // order id responsible for the position
-	AssetClass     string          `json:"class"`      // asset class of the position
-	PositionStatus string          `json:"posstatus"`  // position status (open)
-	Pair           string          `json:"pair"`       // asset pair
-	Time           time.Time       `json:"time"`       // time the position was opened
-	Type           string          `json:"type"`       // buy or sell (direction)
-	OrderType      string          `json:"ordertype"`  // order type used to open
-	Cost           decimal.Decimal `json:"cost"`       // opening cost (quote currency)
-	Fee            decimal.Decimal `json:"fee"`        // opening fee (quote currency)
-	Volume         decimal.Decimal `json:"vol"`        // opening size (base currency)
-	VolumeClosed   decimal.Decimal `json:"vol_closed"` // quantity closed (base currency)
-	Margin         decimal.Decimal `json:"margin"`     // initial margin consumed (quote currency)
-	Value          decimal.Decimal `json:"value"`      // current value (if docalcs)
-	Net            decimal.Decimal `json:"net"`        // unrealized P&L of remaining position (if docalcs)
-	Terms          string          `json:"terms"`      // funding cost and term of position
-	RolloverTime   time.Time       `json:"rollovertm"` // timestamp of next margin rollover fee
-	Misc           string          `json:"misc"`       // comma-delimited additional info
-	OrderFlags     string          `json:"oflags"`     // comma-delimited opening order flags
+	OrderTxID      string          `json:"ordertxid"`              // order id responsible for the position
+	AssetClass     string          `json:"class"`                  // asset class of the position
+	PositionStatus string          `json:"posstatus"`              // position status (open)
+	Pair           string          `json:"pair"`                   // asset pair
+	Time           time.Time       `json:"time,format:unix"`       // time the position was opened
+	Type           string          `json:"type"`                   // buy or sell (direction)
+	OrderType      string          `json:"ordertype"`              // order type used to open
+	Cost           decimal.Decimal `json:"cost"`                   // opening cost (quote currency)
+	Fee            decimal.Decimal `json:"fee"`                    // opening fee (quote currency)
+	Volume         decimal.Decimal `json:"vol"`                    // opening size (base currency)
+	VolumeClosed   decimal.Decimal `json:"vol_closed"`             // quantity closed (base currency)
+	Margin         decimal.Decimal `json:"margin"`                 // initial margin consumed (quote currency)
+	Value          decimal.Decimal `json:"value"`                  // current value (if docalcs)
+	Net            decimal.Decimal `json:"net"`                    // unrealized P&L of remaining position (if docalcs)
+	Terms          string          `json:"terms"`                  // funding cost and term of position
+	RolloverTime   time.Time       `json:"rollovertm,format:unix"` // timestamp of next margin rollover fee
+	Misc           string          `json:"misc"`                   // comma-delimited additional info
+	OrderFlags     string          `json:"oflags"`                 // comma-delimited opening order flags
 }
 
 // ===========================================================================
@@ -846,27 +846,27 @@ func (s *GetExportReportStatusService) Do(ctx context.Context) ([]ExportReport, 
 
 // ExportReport is the status of one export report.
 type ExportReport struct {
-	ID            string    `json:"id"`            // unique report identifier
-	Description   string    `json:"descr"`         // report description/name
-	Format        string    `json:"format"`        // file format (CSV/TSV)
-	Report        string    `json:"report"`        // report type (trades/ledgers)
-	SubType       string    `json:"subtype"`       // report subtype
-	Status        string    `json:"status"`        // Queued, Processing, Processed
-	Error         string    `json:"error"`         // error code if failed
-	Flags         string    `json:"flags"`         // legacy flag field (deprecated)
-	Fields        string    `json:"fields"`        // fields included
-	CreatedTime   time.Time `json:"createdtm"`     // time the report was requested
-	ExpireTime    time.Time `json:"expiretm"`      // expiration timestamp (deprecated)
-	StartTime     time.Time `json:"starttm"`       // time processing began
-	CompletedTime time.Time `json:"completedtm"`   // time processing finished
-	DataStartTime time.Time `json:"datastarttm"`   // report data period start
-	DataEndTime   time.Time `json:"dataendtm"`     // report data period end
-	AssetClass    string    `json:"aclass"`        // asset class (deprecated)
-	Asset         string    `json:"asset"`         // assets included
-	Assets        string    `json:"assets"`        // assets included (current key)
-	AssetClasses  []string  `json:"asset_classes"` // asset classes covered
-	EndTime       time.Time `json:"endtm"`         // report end time
-	Delete        bool      `json:"delete"`        // whether marked for deletion
+	ID            string    `json:"id"`                      // unique report identifier
+	Description   string    `json:"descr"`                   // report description/name
+	Format        string    `json:"format"`                  // file format (CSV/TSV)
+	Report        string    `json:"report"`                  // report type (trades/ledgers)
+	SubType       string    `json:"subtype"`                 // report subtype
+	Status        string    `json:"status"`                  // Queued, Processing, Processed
+	Error         string    `json:"error"`                   // error code if failed
+	Flags         string    `json:"flags"`                   // legacy flag field (deprecated)
+	Fields        string    `json:"fields"`                  // fields included
+	CreatedTime   time.Time `json:"createdtm,format:unix"`   // time the report was requested
+	ExpireTime    time.Time `json:"expiretm,format:unix"`    // expiration timestamp (deprecated)
+	StartTime     time.Time `json:"starttm,format:unix"`     // time processing began
+	CompletedTime time.Time `json:"completedtm,format:unix"` // time processing finished
+	DataStartTime time.Time `json:"datastarttm,format:unix"` // report data period start
+	DataEndTime   time.Time `json:"dataendtm,format:unix"`   // report data period end
+	AssetClass    string    `json:"aclass"`                  // asset class (deprecated)
+	Asset         string    `json:"asset"`                   // assets included
+	Assets        string    `json:"assets"`                  // assets included (current key)
+	AssetClasses  []string  `json:"asset_classes"`           // asset classes covered
+	EndTime       time.Time `json:"endtm,format:unix"`       // report end time
+	Delete        bool      `json:"delete"`                  // whether marked for deletion
 }
 
 // ===========================================================================
@@ -1004,19 +1004,19 @@ func (s *GetApiKeyInfoService) Do(ctx context.Context) (*APIKeyInfo, error) {
 
 // APIKeyInfo describes the signing API key.
 type APIKeyInfo struct {
-	APIKey       string    `json:"api_key"`       // the public API key
-	APIKeyName   string    `json:"api_key_name"`  // user-assigned key name
-	IBAN         string    `json:"iban"`          // the account IBAN
-	Permissions  []string  `json:"permissions"`   // granted permissions
-	IPAllowlist  []string  `json:"ip_allowlist"`  // allowed source IPs (empty = any)
-	Nonce        string    `json:"nonce"`         // last nonce seen for the key
-	NonceWindow  string    `json:"nonce_window"`  // configured nonce window (seconds)
-	CreatedTime  time.Time `json:"created_time"`  // when the key was created
-	ModifiedTime time.Time `json:"modified_time"` // when the key was last modified
-	LastUsed     time.Time `json:"last_used"`     // when the key was last used
-	QueryFrom    time.Time `json:"query_from"`    // start of the key's allowed query window
-	QueryTo      time.Time `json:"query_to"`      // end of the key's allowed query window
-	ValidUntil   time.Time `json:"valid_until"`   // key expiry (zero = no expiry)
+	APIKey       string    `json:"api_key"`                   // the public API key
+	APIKeyName   string    `json:"api_key_name"`              // user-assigned key name
+	IBAN         string    `json:"iban"`                      // the account IBAN
+	Permissions  []string  `json:"permissions"`               // granted permissions
+	IPAllowlist  []string  `json:"ip_allowlist"`              // allowed source IPs (empty = any)
+	Nonce        string    `json:"nonce"`                     // last nonce seen for the key
+	NonceWindow  string    `json:"nonce_window"`              // configured nonce window (seconds)
+	CreatedTime  time.Time `json:"created_time,format:unix"`  // when the key was created
+	ModifiedTime time.Time `json:"modified_time,format:unix"` // when the key was last modified
+	LastUsed     time.Time `json:"last_used,format:unix"`     // when the key was last used
+	QueryFrom    time.Time `json:"query_from,format:unix"`    // start of the key's allowed query window
+	QueryTo      time.Time `json:"query_to,format:unix"`      // end of the key's allowed query window
+	ValidUntil   time.Time `json:"valid_until,format:unix"`   // key expiry (zero = no expiry)
 }
 
 // ===========================================================================

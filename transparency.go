@@ -53,12 +53,12 @@ type PreTradeData struct {
 
 // PreTradeLevel is one aggregated transparency order-book level.
 type PreTradeLevel struct {
-	Side            string          `json:"side"`           // BUY or SELL
-	Price           decimal.Decimal `json:"price"`          // price level
-	Qty             decimal.Decimal `json:"qty"`            // aggregated quantity
-	Count           int             `json:"count"`          // number of orders aggregated
-	SubmissionTime  time.Time       `json:"submission_ts"`  // order submission time
-	PublicationTime time.Time       `json:"publication_ts"` // data publication time
+	Side            string          `json:"side"`                              // BUY or SELL
+	Price           decimal.Decimal `json:"price"`                             // price level
+	Qty             decimal.Decimal `json:"qty"`                               // aggregated quantity
+	Count           int             `json:"count"`                             // number of orders aggregated
+	SubmissionTime  time.Time       `json:"submission_ts,format:RFC3339Nano"`  // order submission time
+	PublicationTime time.Time       `json:"publication_ts,format:RFC3339Nano"` // data publication time
 }
 
 // ===========================================================================
@@ -106,28 +106,28 @@ func (s *GetPostTradeDataService) Do(ctx context.Context) (*PostTradeData, error
 
 // PostTradeData is a page of executed-trade transparency records.
 type PostTradeData struct {
-	Count    int         `json:"count"`   // number of trades returned
-	LastTime time.Time   `json:"last_ts"` // timestamp of the last trade in the page
-	Trades   []PostTrade `json:"trades"`  // executed trades
+	Count    int         `json:"count"`                      // number of trades returned
+	LastTime time.Time   `json:"last_ts,format:RFC3339Nano"` // timestamp of the last trade in the page
+	Trades   []PostTrade `json:"trades"`                     // executed trades
 }
 
 // PostTrade is one executed-trade transparency record.
 type PostTrade struct {
-	TradeID           string          `json:"trade_id"`             // trade identifier
-	Symbol            string          `json:"symbol"`               // currency pair symbol
-	Description       string          `json:"description"`          // human-readable description
-	Price             decimal.Decimal `json:"price"`                // execution price
-	Quantity          decimal.Decimal `json:"quantity"`             // executed quantity
-	BaseAsset         string          `json:"base_asset"`           // base asset
-	BaseDTICode       string          `json:"base_dti_code"`        // base Digital Token Identifier
-	BaseDTIShortName  string          `json:"base_dti_short_name"`  // base DTI short name
-	BaseNotation      string          `json:"base_notation"`        // base quantity notation
-	QuoteAsset        string          `json:"quote_asset"`          // quote asset
-	QuoteDTICode      string          `json:"quote_dti_code"`       // quote Digital Token Identifier
-	QuoteDTIShortName string          `json:"quote_dti_short_name"` // quote DTI short name
-	QuoteNotation     string          `json:"quote_notation"`       // quote notation (e.g. MONE)
-	TradeVenue        string          `json:"trade_venue"`          // execution venue (MIC)
-	TradeTime         time.Time       `json:"trade_ts"`             // execution time
-	PublicationVenue  string          `json:"publication_venue"`    // publication venue (MIC)
-	PublicationTime   time.Time       `json:"publication_ts"`       // data publication time
+	TradeID           string          `json:"trade_id"`                          // trade identifier
+	Symbol            string          `json:"symbol"`                            // currency pair symbol
+	Description       string          `json:"description"`                       // human-readable description
+	Price             decimal.Decimal `json:"price"`                             // execution price
+	Quantity          decimal.Decimal `json:"quantity"`                          // executed quantity
+	BaseAsset         string          `json:"base_asset"`                        // base asset
+	BaseDTICode       string          `json:"base_dti_code"`                     // base Digital Token Identifier
+	BaseDTIShortName  string          `json:"base_dti_short_name"`               // base DTI short name
+	BaseNotation      string          `json:"base_notation"`                     // base quantity notation
+	QuoteAsset        string          `json:"quote_asset"`                       // quote asset
+	QuoteDTICode      string          `json:"quote_dti_code"`                    // quote Digital Token Identifier
+	QuoteDTIShortName string          `json:"quote_dti_short_name"`              // quote DTI short name
+	QuoteNotation     string          `json:"quote_notation"`                    // quote notation (e.g. MONE)
+	TradeVenue        string          `json:"trade_venue"`                       // execution venue (MIC)
+	TradeTime         time.Time       `json:"trade_ts,format:RFC3339Nano"`       // execution time
+	PublicationVenue  string          `json:"publication_venue"`                 // publication venue (MIC)
+	PublicationTime   time.Time       `json:"publication_ts,format:RFC3339Nano"` // data publication time
 }

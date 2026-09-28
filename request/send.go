@@ -1,6 +1,7 @@
 package request
 
 import (
+	"encoding/json/jsontext"
 	"errors"
 	"fmt"
 	"net/http"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/UnipayFI/go-kraken/client"
 	"github.com/UnipayFI/go-kraken/common"
-	"github.com/go-json-experiment/json/jsontext"
 )
 
 // apiResponse is Kraken's uniform REST envelope. "error" is empty on success
