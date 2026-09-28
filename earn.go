@@ -300,8 +300,8 @@ type EarnAllocationDetail struct {
 
 // EarnPayout describes the current reward payout period.
 type EarnPayout struct {
-	AccumulatedReward EarnConvertedAmount `json:"accumulated_reward"`              // reward accrued this period
-	EstimatedReward   EarnConvertedAmount `json:"estimated_reward"`                // estimated reward for the period
-	PeriodStart       time.Time           `json:"period_start,format:RFC3339Nano"` // start of the payout period
-	PeriodEnd         time.Time           `json:"period_end,format:RFC3339Nano"`   // end of the payout period
+	AccumulatedReward EarnConvertedAmount `json:"accumulated_reward"`          // reward accrued this period
+	EstimatedReward   EarnConvertedAmount `json:"estimated_reward"`            // estimated reward for the period
+	PeriodStart       time.Time           `json:"period_start,format:RFC3339"` // start of the payout period
+	PeriodEnd         time.Time           `json:"period_end,format:RFC3339"`   // end of the payout period
 }
