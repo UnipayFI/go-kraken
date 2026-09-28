@@ -25,8 +25,11 @@ func TestAccountExtra(t *testing.T) {
 			t.Fatalf("Level3: %v", err)
 		}
 		apitest.AssertCovers(t, "Level3", raw, resp)
-		if len(resp.Asks) == 0 || resp.Asks[0].OrderID == "" || resp.Asks[0].Timestamp.Time().IsZero() {
+		if len(resp.Asks) == 0 || resp.Asks[0].OrderID == "" || resp.Asks[0].Timestamp.IsZero() {
 			t.Errorf("Level3 ask entry invalid: %+v", resp.Asks)
+		} else if ts := resp.Asks[0].Timestamp; ts.Year() < 2013 || ts.After(time.Now().Add(24*time.Hour)) {
+			// A wrong format unit never errors; it only misdates.
+			t.Errorf("Level3 ask timestamp %v is implausible; wrong format unit?", ts)
 		}
 		pace()
 	}

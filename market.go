@@ -790,10 +790,10 @@ type L3OrderBook struct {
 
 // L3Entry is one resting order in the level-3 book.
 type L3Entry struct {
-	OrderID   string          `json:"order_id"`  // order identifier
-	Price     decimal.Decimal `json:"price"`     // limit price
-	Qty       decimal.Decimal `json:"qty"`       // remaining quantity
-	Timestamp NanoTime        `json:"timestamp"` // order timestamp (UNIX nanoseconds)
+	OrderID   string          `json:"order_id"`                  // order identifier
+	Price     decimal.Decimal `json:"price"`                     // limit price
+	Qty       decimal.Decimal `json:"qty"`                       // remaining quantity
+	Timestamp time.Time       `json:"timestamp,format:unixnano"` // order timestamp (UNIX nanoseconds)
 }
 
 // ===========================================================================

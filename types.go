@@ -104,48 +104,6 @@ const (
 	OrderFlagVIQC  = "viqc"  // order volume expressed in quote currency
 )
 
-// NanoTime is a timestamp Kraken encodes as UNIX *nanoseconds* — used by a few
-// newer endpoints (e.g. order amends) — as opposed to the UNIX seconds used by
-// the rest of the API and handled by the global time.Time codec. It is a
-// distinct type so the seconds-based codec does not misread it.
-type NanoTime time.Time
-
-func (t *NanoTime) UnmarshalJSON(data []byte) error {
-	// Parse the raw token directly as a 64-bit integer: a nanosecond epoch has
-	// up to 19 digits, which exceeds float64's ~16 significant digits, so going
-	// through float64 (or any) would silently lose precision.
-	s := strings.Trim(strings.TrimSpace(string(data)), `"`)
-	if s == "" || s == "0" || s == "null" {
-		*t = NanoTime(time.Time{})
-		return nil
-	}
-	ns, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		f, ferr := strconv.ParseFloat(s, 64)
-		if ferr != nil {
-			return err
-		}
-		ns = int64(f)
-	}
-	if ns == 0 {
-		*t = NanoTime(time.Time{})
-		return nil
-	}
-	*t = NanoTime(time.Unix(0, ns).UTC())
-	return nil
-}
-
-func (t NanoTime) MarshalJSON() ([]byte, error) {
-	tt := time.Time(t)
-	if tt.IsZero() {
-		return []byte("0"), nil
-	}
-	return []byte(strconv.FormatInt(tt.UnixNano(), 10)), nil
-}
-
-// Time returns the timestamp as a standard time.Time.
-func (t NanoTime) Time() time.Time { return time.Time(t) }
-
 // formatBool / formatInt / formatTime are small helpers for building request
 // params (which Kraken expects as form-encoded strings).
 func formatBool(b bool) string { return strconv.FormatBool(b) }

@@ -175,7 +175,7 @@ for structs with `format` tags, and `log/slog`'s JSON handler logs `!ERROR:...` 
 | Transparency | `transparency.go` | PreTrade, PostTrade (MiFID pre/post-trade data) |
 | Affiliate | `affiliate.go` | DailyActivity (KOL referred-user activity; `/affiliate/v1`, no envelope) |
 | WebSocket auth | `websocket.go` | GetWebSocketsToken (REST) |
-| Shared types | `types.go` | order enums, `NanoTime`, `MethodLimit` |
+| Shared types | `types.go` | order enums, `MethodLimit` |
 
 **WebSocket v2** (`ws*.go`)
 
