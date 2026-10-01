@@ -693,6 +693,7 @@ func (s *GetOpenPositionsService) SetDoCalcs(doCalcs bool) *GetOpenPositionsServ
 }
 
 // SetConsolidation consolidates positions by market/pair (value: "market").
+// The response is then a list that Do cannot decode; use DoConsolidated.
 func (s *GetOpenPositionsService) SetConsolidation(consolidation string) *GetOpenPositionsService {
 	s.params["consolidation"] = consolidation
 	return s
@@ -707,6 +708,17 @@ func (s *GetOpenPositionsService) SetAccountID(accountID string) *GetOpenPositio
 
 func (s *GetOpenPositionsService) Do(ctx context.Context) (map[string]PositionInfo, error) {
 	resp, err := request.Do[map[string]PositionInfo](request.Post(ctx, s.c, "/0/private/OpenPositions", s.params).WithSign())
+	if err != nil {
+		return nil, err
+	}
+	return *resp, nil
+}
+
+// DoConsolidated requests consolidation=market and returns the positions
+// consolidated by pair.
+func (s *GetOpenPositionsService) DoConsolidated(ctx context.Context) ([]ConsolidatedPosition, error) {
+	s.params["consolidation"] = "market"
+	resp, err := request.Do[[]ConsolidatedPosition](request.Post(ctx, s.c, "/0/private/OpenPositions", s.params).WithSign())
 	if err != nil {
 		return nil, err
 	}
@@ -733,6 +745,23 @@ type PositionInfo struct {
 	RolloverTime   time.Time       `json:"rollovertm,format:unix"` // timestamp of next margin rollover fee
 	Misc           string          `json:"misc"`                   // comma-delimited additional info
 	OrderFlags     string          `json:"oflags"`                 // comma-delimited opening order flags
+}
+
+// ConsolidatedPosition is the open margin positions of one pair, summed
+// (consolidation=market).
+type ConsolidatedPosition struct {
+	Pair         string          `json:"pair"`       // asset pair
+	AssetClass   string          `json:"class"`      // asset class of the positions
+	Positions    decimal.Decimal `json:"positions"`  // number of positions consolidated into this entry
+	Type         string          `json:"type"`       // buy or sell (direction)
+	Leverage     string          `json:"leverage"`   // average leverage, or "n/a"
+	Cost         decimal.Decimal `json:"cost"`       // opening cost (quote currency)
+	Fee          decimal.Decimal `json:"fee"`        // opening fee (quote currency)
+	Volume       decimal.Decimal `json:"vol"`        // opening size (base currency)
+	VolumeClosed decimal.Decimal `json:"vol_closed"` // quantity closed (base currency)
+	Margin       decimal.Decimal `json:"margin"`     // initial margin consumed (quote currency)
+	Value        decimal.Decimal `json:"value"`      // current value of remaining positions (if docalcs)
+	Net          decimal.Decimal `json:"net"`        // unrealized P&L of remaining positions (if docalcs)
 }
 
 // ===========================================================================

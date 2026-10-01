@@ -266,6 +266,17 @@ func TestAccountData(t *testing.T) {
 		apitest.AssertCovers(t, "OpenPositions", raw, resp)
 		t.Logf("OpenPositions: %d", len(resp))
 		pace()
+
+		// Consolidated (list) response (2026-09-30).
+		params := map[string]string{"consolidation": "market", "docalcs": "true"}
+		raw = apitest.FetchRawPost(t, c, ctx, "/0/private/OpenPositions", params)
+		consolidated, err := c.NewGetOpenPositionsService().SetDoCalcs(true).DoConsolidated(ctx)
+		if err != nil {
+			t.Fatalf("OpenPositions(consolidated): %v (raw %s)", err, raw)
+		}
+		apitest.AssertCovers(t, "OpenPositions(consolidated)", raw, consolidated)
+		t.Logf("OpenPositions(consolidated): %d pair(s)", len(consolidated))
+		pace()
 	}
 
 	// 11. Get Ledgers Info (also yields a ledger id for QueryLedgers).
