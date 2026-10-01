@@ -1148,17 +1148,23 @@ type CreditLines struct {
 	LimitsMonitor CreditLimitsMonitor          `json:"limits_monitor"` // aggregate margin limits
 }
 
-// CreditAssetDetail is the collateral detail for one asset.
+// CreditAssetDetail is the collateral detail for one asset. The credit and fee
+// fields are present only for assets with a credit line.
 type CreditAssetDetail struct {
 	Balance         decimal.Decimal `json:"balance"`          // asset balance
-	CollateralValue decimal.Decimal `json:"collateral_value"` // collateral valuation factor
 	HoldTrade       decimal.Decimal `json:"hold_trade"`       // balance held for open orders
+	Credit          decimal.Decimal `json:"credit"`           // credit limit for the asset
+	CreditUsed      decimal.Decimal `json:"credit_used"`      // credit currently used
+	CollateralValue decimal.Decimal `json:"collateral_value"` // collateral value factor, 0 to 1 (eligible collateral only)
+	RolloverFees    decimal.Decimal `json:"rollover_fees"`    // rate on drawn credit, percent per rollover period
+	ReserveFees     decimal.Decimal `json:"reserve_fees"`     // rate on undrawn credit, percent per rollover period
 }
 
 // CreditLimitsMonitor is the aggregate margin-limits snapshot.
 type CreditLimitsMonitor struct {
 	DebtToEquity            decimal.Decimal `json:"debt_to_equity"`             // debt-to-equity ratio
 	EquityUSD               decimal.Decimal `json:"equity_usd"`                 // total equity (USD)
+	OngoingBalance          decimal.Decimal `json:"ongoing_balance"`            // total collateral / total credit (USD)
 	TotalCollateralValueUSD decimal.Decimal `json:"total_collateral_value_usd"` // total collateral value (USD)
 	TotalCreditUSD          decimal.Decimal `json:"total_credit_usd"`           // total credit line (USD)
 	TotalCreditUsedUSD      decimal.Decimal `json:"total_credit_used_usd"`      // credit currently used (USD)
