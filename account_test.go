@@ -127,10 +127,25 @@ func TestAccountData(t *testing.T) {
 			t.Fatalf("QueryOrders: %v", err)
 		}
 		apitest.AssertCovers(t, "QueryOrders", raw, resp)
-		if _, ok := resp[closedTxID]; !ok {
+		order, ok := resp[closedTxID]
+		if !ok {
 			t.Errorf("QueryOrders missing %s", closedTxID)
 		}
 		pace()
+
+		// cl_ord_id filter (2026-09-30), when the sample order carries one.
+		if order.ClientOrderID != "" {
+			filtered, err := c.NewQueryOrdersService(closedTxID).SetClientOrderID(order.ClientOrderID).Do(ctx)
+			if err != nil {
+				t.Fatalf("QueryOrders(cl_ord_id): %v", err)
+			}
+			for txid, o := range filtered {
+				if o.ClientOrderID != order.ClientOrderID {
+					t.Errorf("QueryOrders(cl_ord_id): %s cl_ord_id=%q, want %q", txid, o.ClientOrderID, order.ClientOrderID)
+				}
+			}
+			pace()
+		}
 	} else {
 		t.Log("QueryOrders: no closed order to query; skipped")
 	}
@@ -147,7 +162,8 @@ func TestAccountData(t *testing.T) {
 		pace()
 	}
 
-	// 8. Get Trades History.
+	// 8. Get Trades History (also yields a trade txid for QueryTrades).
+	var tradeTxID string
 	{
 		raw := apitest.FetchRawPost(t, c, ctx, "/0/private/TradesHistory", nil)
 		resp, err := c.NewGetTradesHistoryService().Do(ctx)
@@ -155,6 +171,10 @@ func TestAccountData(t *testing.T) {
 			t.Fatalf("TradesHistory: %v", err)
 		}
 		apitest.AssertCovers(t, "TradesHistory", raw, resp)
+		for txid := range resp.Trades {
+			tradeTxID = txid
+			break
+		}
 		t.Logf("TradesHistory: count=%d", resp.Count)
 		pace()
 
@@ -205,8 +225,24 @@ func TestAccountData(t *testing.T) {
 		t.Logf("TradesHistory(cursor): %d trade(s), next=%q", len(page.Trades), page.Cursor.Next)
 	}
 
-	// 9. Query Trades Info (path+signing now; deep field check in trade test).
-	{
+	// 9. Query Trades Info, with the ledgers option (2026-09-30) when there is a
+	// real trade to query; otherwise path+signing only (deep field check in the
+	// trade test).
+	if tradeTxID != "" {
+		params := map[string]string{"txid": tradeTxID, "ledgers": "true"}
+		raw := apitest.FetchRawPost(t, c, ctx, "/0/private/QueryTrades", params)
+		resp, err := c.NewQueryTradesService(tradeTxID).SetLedgers(true).Do(ctx)
+		if err != nil {
+			t.Fatalf("QueryTrades: %v", err)
+		}
+		apitest.AssertCovers(t, "QueryTrades", raw, resp)
+		if tr, ok := resp[tradeTxID]; !ok {
+			t.Errorf("QueryTrades missing %s", tradeTxID)
+		} else if len(tr.Ledgers) == 0 {
+			t.Errorf("QueryTrades(ledgers): %s returned no ledger ids", tradeTxID)
+		}
+		pace()
+	} else {
 		trades, err := c.NewQueryTradesService("AAAAAA-BBBBB-CCCCCC").Do(ctx)
 		if err != nil {
 			if !apitest.Tolerable(t, "QueryTrades", err, "Invalid arguments", "Invalid order", "Unknown") {

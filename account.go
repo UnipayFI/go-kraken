@@ -222,6 +222,12 @@ func (s *GetOpenOrdersService) SetClientOrderID(clOrdID string) *GetOpenOrdersSe
 	return s
 }
 
+// SetConsolidateTaker consolidates trades by individual taker trades.
+func (s *GetOpenOrdersService) SetConsolidateTaker(consolidate bool) *GetOpenOrdersService {
+	s.params["consolidate_taker"] = formatBool(consolidate)
+	return s
+}
+
 // SetWithCursor switches to cursor-based pagination: each page holds at most
 // SetLimit orders (default 50) and the response's Cursor.Next is set while more
 // remain.
@@ -383,6 +389,12 @@ func (s *QueryOrdersService) SetTrades(trades bool) *QueryOrdersService {
 // SetUserRef restricts results to the given user reference id.
 func (s *QueryOrdersService) SetUserRef(userRef int) *QueryOrdersService {
 	s.params["userref"] = formatInt(userRef)
+	return s
+}
+
+// SetClientOrderID restricts results to the given client order id.
+func (s *QueryOrdersService) SetClientOrderID(clOrdID string) *QueryOrdersService {
+	s.params["cl_ord_id"] = clOrdID
 	return s
 }
 
@@ -620,6 +632,12 @@ func (c *Client) NewQueryTradesService(txids ...string) *QueryTradesService {
 // SetTrades includes trades related to a position in the output.
 func (s *QueryTradesService) SetTrades(trades bool) *QueryTradesService {
 	s.params["trades"] = formatBool(trades)
+	return s
+}
+
+// SetLedgers includes related ledger ids for each trade.
+func (s *QueryTradesService) SetLedgers(ledgers bool) *QueryTradesService {
+	s.params["ledgers"] = formatBool(ledgers)
 	return s
 }
 
