@@ -171,6 +171,12 @@ type OrderInfo struct {
 	Trades         []string         `json:"trades"`               // related trade ids (if requested and available)
 }
 
+// PageCursor points at the next page of a cursor-paginated listing (requests
+// sent with SetWithCursor(true)).
+type PageCursor struct {
+	Next string `json:"next"` // pass to SetCursor; empty when there are no more pages
+}
+
 // LedgerEntry is one ledger record.
 type LedgerEntry struct {
 	RefID      string          `json:"refid"`            // reference id
@@ -216,6 +222,28 @@ func (s *GetOpenOrdersService) SetClientOrderID(clOrdID string) *GetOpenOrdersSe
 	return s
 }
 
+// SetWithCursor switches to cursor-based pagination: each page holds at most
+// SetLimit orders (default 50) and the response's Cursor.Next is set while more
+// remain.
+func (s *GetOpenOrdersService) SetWithCursor(withCursor bool) *GetOpenOrdersService {
+	s.params["with_cursor"] = formatBool(withCursor)
+	return s
+}
+
+// SetCursor continues from a previous page's Cursor.Next (requires
+// SetWithCursor(true)).
+func (s *GetOpenOrdersService) SetCursor(cursor string) *GetOpenOrdersService {
+	s.params["cursor"] = cursor
+	return s
+}
+
+// SetLimit caps the number of orders returned: per page (max 100, default 50)
+// with SetWithCursor(true), otherwise overall (max 1000; default all).
+func (s *GetOpenOrdersService) SetLimit(limit int) *GetOpenOrdersService {
+	s.params["limit"] = formatInt(limit)
+	return s
+}
+
 // SetAccountID selects the wallet account to read orders from by its public id (see
 // ListWalletAccountsService). Omit to use the authenticated user's default wallet.
 func (s *GetOpenOrdersService) SetAccountID(accountID string) *GetOpenOrdersService {
@@ -229,7 +257,8 @@ func (s *GetOpenOrdersService) Do(ctx context.Context) (*OpenOrdersResult, error
 
 // OpenOrdersResult holds the open-orders map keyed by order tx id.
 type OpenOrdersResult struct {
-	Open map[string]OrderInfo `json:"open"`
+	Open   map[string]OrderInfo `json:"open"`
+	Cursor PageCursor           `json:"cursor"` // next page (with_cursor only)
 }
 
 // ===========================================================================
@@ -295,6 +324,20 @@ func (s *GetClosedOrdersService) SetWithoutCount(withoutCount bool) *GetClosedOr
 	return s
 }
 
+// SetWithCursor switches to cursor-based pagination: each page holds up to 50
+// orders and the response's Cursor.Next is set while more remain.
+func (s *GetClosedOrdersService) SetWithCursor(withCursor bool) *GetClosedOrdersService {
+	s.params["with_cursor"] = formatBool(withCursor)
+	return s
+}
+
+// SetCursor continues from a previous page's Cursor.Next (requires
+// SetWithCursor(true)).
+func (s *GetClosedOrdersService) SetCursor(cursor string) *GetClosedOrdersService {
+	s.params["cursor"] = cursor
+	return s
+}
+
 // SetAccountID selects the wallet account to read orders from by its public id (see
 // ListWalletAccountsService). Omit to use the authenticated user's default wallet.
 func (s *GetClosedOrdersService) SetAccountID(accountID string) *GetClosedOrdersService {
@@ -309,7 +352,8 @@ func (s *GetClosedOrdersService) Do(ctx context.Context) (*ClosedOrdersResult, e
 // ClosedOrdersResult holds the closed-orders map plus the total count.
 type ClosedOrdersResult struct {
 	Closed map[string]OrderInfo `json:"closed"`
-	Count  int                  `json:"count"`
+	Count  int                  `json:"count"`  // 0 with without_count or with_cursor
+	Cursor PageCursor           `json:"cursor"` // next page (with_cursor only)
 }
 
 // ===========================================================================
@@ -520,6 +564,20 @@ func (s *GetTradesHistoryService) SetLimit(limit int) *GetTradesHistoryService {
 	return s
 }
 
+// SetWithCursor switches to cursor-based pagination: each page holds up to
+// SetLimit trades and the response's Cursor.Next is set while more remain.
+func (s *GetTradesHistoryService) SetWithCursor(withCursor bool) *GetTradesHistoryService {
+	s.params["with_cursor"] = formatBool(withCursor)
+	return s
+}
+
+// SetCursor continues from a previous page's Cursor.Next (requires
+// SetWithCursor(true)).
+func (s *GetTradesHistoryService) SetCursor(cursor string) *GetTradesHistoryService {
+	s.params["cursor"] = cursor
+	return s
+}
+
 // SetAccountID selects the wallet account to read trades from by its public id (see
 // ListWalletAccountsService). Omit to use the authenticated user's default wallet.
 func (s *GetTradesHistoryService) SetAccountID(accountID string) *GetTradesHistoryService {
@@ -534,7 +592,8 @@ func (s *GetTradesHistoryService) Do(ctx context.Context) (*TradesHistoryResult,
 // TradesHistoryResult holds the trades map plus the total count.
 type TradesHistoryResult struct {
 	Trades map[string]TradeHistoryEntry `json:"trades"`
-	Count  int                          `json:"count"`
+	Count  int                          `json:"count"`  // 0 with without_count or with_cursor
+	Cursor PageCursor                   `json:"cursor"` // next page (with_cursor only)
 }
 
 // ===========================================================================

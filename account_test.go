@@ -64,6 +64,19 @@ func TestAccountData(t *testing.T) {
 		apitest.AssertCovers(t, "OpenOrders", raw, resp)
 		t.Logf("OpenOrders: %d open", len(resp.Open))
 		pace()
+
+		// Cursor pagination (2026-09-30).
+		params := map[string]string{"with_cursor": "true", "limit": "1"}
+		raw = apitest.FetchRawPost(t, c, ctx, "/0/private/OpenOrders", params)
+		page, err := c.NewGetOpenOrdersService().SetWithCursor(true).SetLimit(1).Do(ctx)
+		if err != nil {
+			t.Fatalf("OpenOrders(cursor): %v", err)
+		}
+		apitest.AssertCovers(t, "OpenOrders(cursor)", raw, page)
+		if len(page.Open) > 1 {
+			t.Errorf("OpenOrders(cursor): limit=1 returned %d orders", len(page.Open))
+		}
+		pace()
 	}
 
 	// 5. Get Closed Orders (also yields a txid for QueryOrders / OrderAmends).
@@ -81,6 +94,28 @@ func TestAccountData(t *testing.T) {
 		}
 		t.Logf("ClosedOrders: count=%d sample=%s", resp.Count, closedTxID)
 		pace()
+
+		// Cursor pagination (2026-09-30): walk two pages and check they don't overlap.
+		raw = apitest.FetchRawPost(t, c, ctx, "/0/private/ClosedOrders", map[string]string{"with_cursor": "true"})
+		page, err := c.NewGetClosedOrdersService().SetWithCursor(true).Do(ctx)
+		if err != nil {
+			t.Fatalf("ClosedOrders(cursor): %v", err)
+		}
+		apitest.AssertCovers(t, "ClosedOrders(cursor)", raw, page)
+		pace()
+		if page.Cursor.Next != "" {
+			next, err := c.NewGetClosedOrdersService().SetWithCursor(true).SetCursor(page.Cursor.Next).Do(ctx)
+			if err != nil {
+				t.Fatalf("ClosedOrders(cursor page 2): %v", err)
+			}
+			for txid := range next.Closed {
+				if _, dup := page.Closed[txid]; dup {
+					t.Errorf("ClosedOrders(cursor): %s on both pages", txid)
+				}
+			}
+			pace()
+		}
+		t.Logf("ClosedOrders(cursor): %d order(s), next=%q", len(page.Closed), page.Cursor.Next)
 	}
 
 	// 6. Query Orders Info.
@@ -145,6 +180,29 @@ func TestAccountData(t *testing.T) {
 		}
 		t.Logf("TradesHistory(filtered): %d trade(s)", len(filtered.Trades))
 		pace()
+
+		// Cursor pagination (2026-09-30): walk two one-trade pages.
+		params = map[string]string{"with_cursor": "true", "limit": "1"}
+		raw = apitest.FetchRawPost(t, c, ctx, "/0/private/TradesHistory", params)
+		page, err := c.NewGetTradesHistoryService().SetWithCursor(true).SetLimit(1).Do(ctx)
+		if err != nil {
+			t.Fatalf("TradesHistory(cursor): %v", err)
+		}
+		apitest.AssertCovers(t, "TradesHistory(cursor)", raw, page)
+		pace()
+		if page.Cursor.Next != "" {
+			next, err := c.NewGetTradesHistoryService().SetWithCursor(true).SetLimit(1).SetCursor(page.Cursor.Next).Do(ctx)
+			if err != nil {
+				t.Fatalf("TradesHistory(cursor page 2): %v", err)
+			}
+			for txid := range next.Trades {
+				if _, dup := page.Trades[txid]; dup {
+					t.Errorf("TradesHistory(cursor): %s on both pages", txid)
+				}
+			}
+			pace()
+		}
+		t.Logf("TradesHistory(cursor): %d trade(s), next=%q", len(page.Trades), page.Cursor.Next)
 	}
 
 	// 9. Query Trades Info (path+signing now; deep field check in trade test).
