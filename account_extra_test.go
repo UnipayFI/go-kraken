@@ -90,5 +90,41 @@ func TestAccountExtra(t *testing.T) {
 		}
 		apitest.AssertCovers(t, "Balance(account_id)", balRaw, bal)
 		t.Logf("Balance(account_id=%s): %d asset(s)", acct.AccountID, len(bal))
+		pace()
+
+		// account_id on the rest of the account-data surface (2026-09-30).
+		scoped := []struct {
+			path string
+			do   func() (any, error)
+		}{
+			{"/0/private/BalanceEx", func() (any, error) {
+				return c.NewGetExtendedBalanceService().SetAccountID(acct.AccountID).Do(ctx)
+			}},
+			{"/0/private/TradeBalance", func() (any, error) {
+				return c.NewGetTradeBalanceService().SetAccountID(acct.AccountID).Do(ctx)
+			}},
+			{"/0/private/OpenOrders", func() (any, error) {
+				return c.NewGetOpenOrdersService().SetAccountID(acct.AccountID).Do(ctx)
+			}},
+			{"/0/private/ClosedOrders", func() (any, error) {
+				return c.NewGetClosedOrdersService().SetAccountID(acct.AccountID).Do(ctx)
+			}},
+			{"/0/private/TradesHistory", func() (any, error) {
+				return c.NewGetTradesHistoryService().SetAccountID(acct.AccountID).Do(ctx)
+			}},
+			{"/0/private/OpenPositions", func() (any, error) {
+				return c.NewGetOpenPositionsService().SetAccountID(acct.AccountID).Do(ctx)
+			}},
+		}
+		for _, sc := range scoped {
+			label := sc.path[len("/0/private/"):] + "(account_id)"
+			raw := apitest.FetchRawPost(t, c, ctx, sc.path, params)
+			resp, err := sc.do()
+			if err != nil {
+				t.Fatalf("%s: %v", label, err)
+			}
+			apitest.AssertCovers(t, label, raw, resp)
+			pace()
+		}
 	}
 }

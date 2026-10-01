@@ -48,15 +48,23 @@ func (s *GetAccountBalanceService) Do(ctx context.Context) (map[string]decimal.D
 // GetExtendedBalanceService returns all cash balances with a breakdown of the
 // amount held for open orders/positions, keyed by Kraken asset name.
 type GetExtendedBalanceService struct {
-	c *Client
+	c      *Client
+	params map[string]string
 }
 
 func (c *Client) NewGetExtendedBalanceService() *GetExtendedBalanceService {
-	return &GetExtendedBalanceService{c: c}
+	return &GetExtendedBalanceService{c: c, params: map[string]string{}}
+}
+
+// SetAccountID selects the wallet account to report on by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetExtendedBalanceService) SetAccountID(accountID string) *GetExtendedBalanceService {
+	s.params["account_id"] = accountID
+	return s
 }
 
 func (s *GetExtendedBalanceService) Do(ctx context.Context) (map[string]ExtendedBalance, error) {
-	resp, err := request.Do[map[string]ExtendedBalance](request.Post(ctx, s.c, "/0/private/BalanceEx").WithSign())
+	resp, err := request.Do[map[string]ExtendedBalance](request.Post(ctx, s.c, "/0/private/BalanceEx", s.params).WithSign())
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +95,13 @@ func (c *Client) NewGetTradeBalanceService() *GetTradeBalanceService {
 // SetAsset sets the base asset used to determine the balance (default ZUSD).
 func (s *GetTradeBalanceService) SetAsset(asset string) *GetTradeBalanceService {
 	s.params["asset"] = asset
+	return s
+}
+
+// SetAccountID selects the wallet account to report on by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetTradeBalanceService) SetAccountID(accountID string) *GetTradeBalanceService {
+	s.params["account_id"] = accountID
 	return s
 }
 
@@ -201,6 +216,13 @@ func (s *GetOpenOrdersService) SetClientOrderID(clOrdID string) *GetOpenOrdersSe
 	return s
 }
 
+// SetAccountID selects the wallet account to read orders from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetOpenOrdersService) SetAccountID(accountID string) *GetOpenOrdersService {
+	s.params["account_id"] = accountID
+	return s
+}
+
 func (s *GetOpenOrdersService) Do(ctx context.Context) (*OpenOrdersResult, error) {
 	return request.Do[OpenOrdersResult](request.Post(ctx, s.c, "/0/private/OpenOrders", s.params).WithSign())
 }
@@ -273,6 +295,13 @@ func (s *GetClosedOrdersService) SetWithoutCount(withoutCount bool) *GetClosedOr
 	return s
 }
 
+// SetAccountID selects the wallet account to read orders from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetClosedOrdersService) SetAccountID(accountID string) *GetClosedOrdersService {
+	s.params["account_id"] = accountID
+	return s
+}
+
 func (s *GetClosedOrdersService) Do(ctx context.Context) (*ClosedOrdersResult, error) {
 	return request.Do[ClosedOrdersResult](request.Post(ctx, s.c, "/0/private/ClosedOrders", s.params).WithSign())
 }
@@ -316,6 +345,13 @@ func (s *QueryOrdersService) SetConsolidateTaker(consolidate bool) *QueryOrdersS
 	return s
 }
 
+// SetAccountID selects the wallet account to read orders from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *QueryOrdersService) SetAccountID(accountID string) *QueryOrdersService {
+	s.params["account_id"] = accountID
+	return s
+}
+
 func (s *QueryOrdersService) Do(ctx context.Context) (map[string]OrderInfo, error) {
 	resp, err := request.Do[map[string]OrderInfo](request.Post(ctx, s.c, "/0/private/QueryOrders", s.params).WithSign())
 	if err != nil {
@@ -337,6 +373,13 @@ type GetOrderAmendsService struct {
 // NewGetOrderAmendsService queries amends for one Kraken order id.
 func (c *Client) NewGetOrderAmendsService(orderID string) *GetOrderAmendsService {
 	return &GetOrderAmendsService{c: c, params: map[string]string{"order_id": orderID}}
+}
+
+// SetAccountID selects the wallet account to read the order from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetOrderAmendsService) SetAccountID(accountID string) *GetOrderAmendsService {
+	s.params["account_id"] = accountID
+	return s
 }
 
 func (s *GetOrderAmendsService) Do(ctx context.Context) (*OrderAmendsResult, error) {
@@ -477,6 +520,13 @@ func (s *GetTradesHistoryService) SetLimit(limit int) *GetTradesHistoryService {
 	return s
 }
 
+// SetAccountID selects the wallet account to read trades from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetTradesHistoryService) SetAccountID(accountID string) *GetTradesHistoryService {
+	s.params["account_id"] = accountID
+	return s
+}
+
 func (s *GetTradesHistoryService) Do(ctx context.Context) (*TradesHistoryResult, error) {
 	return request.Do[TradesHistoryResult](request.Post(ctx, s.c, "/0/private/TradesHistory", s.params).WithSign())
 }
@@ -505,6 +555,13 @@ func (c *Client) NewQueryTradesService(txids ...string) *QueryTradesService {
 // SetTrades includes trades related to a position in the output.
 func (s *QueryTradesService) SetTrades(trades bool) *QueryTradesService {
 	s.params["trades"] = formatBool(trades)
+	return s
+}
+
+// SetAccountID selects the wallet account to read trades from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *QueryTradesService) SetAccountID(accountID string) *QueryTradesService {
+	s.params["account_id"] = accountID
 	return s
 }
 
@@ -545,6 +602,13 @@ func (s *GetOpenPositionsService) SetDoCalcs(doCalcs bool) *GetOpenPositionsServ
 // SetConsolidation consolidates positions by market/pair (value: "market").
 func (s *GetOpenPositionsService) SetConsolidation(consolidation string) *GetOpenPositionsService {
 	s.params["consolidation"] = consolidation
+	return s
+}
+
+// SetAccountID selects the wallet account to read positions from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetOpenPositionsService) SetAccountID(accountID string) *GetOpenPositionsService {
+	s.params["account_id"] = accountID
 	return s
 }
 
@@ -671,6 +735,13 @@ func (c *Client) NewQueryLedgersService(ids ...string) *QueryLedgersService {
 // SetTrades includes related trade info in the output.
 func (s *QueryLedgersService) SetTrades(trades bool) *QueryLedgersService {
 	s.params["trades"] = formatBool(trades)
+	return s
+}
+
+// SetAccountID selects the wallet account to read ledgers from by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *QueryLedgersService) SetAccountID(accountID string) *QueryLedgersService {
+	s.params["account_id"] = accountID
 	return s
 }
 
@@ -954,15 +1025,23 @@ type DeleteExportResult struct {
 // collateral details and a margin-limits monitor. Available to eligible
 // (typically VIP) accounts.
 type GetCreditLinesService struct {
-	c *Client
+	c      *Client
+	params map[string]string
 }
 
 func (c *Client) NewGetCreditLinesService() *GetCreditLinesService {
-	return &GetCreditLinesService{c: c}
+	return &GetCreditLinesService{c: c, params: map[string]string{}}
+}
+
+// SetAccountID selects the wallet account to report on by its public id (see
+// ListWalletAccountsService). Omit to use the authenticated user's default wallet.
+func (s *GetCreditLinesService) SetAccountID(accountID string) *GetCreditLinesService {
+	s.params["account_id"] = accountID
+	return s
 }
 
 func (s *GetCreditLinesService) Do(ctx context.Context) (*CreditLines, error) {
-	return request.Do[CreditLines](request.Post(ctx, s.c, "/0/private/CreditLines").WithSign())
+	return request.Do[CreditLines](request.Post(ctx, s.c, "/0/private/CreditLines", s.params).WithSign())
 }
 
 // CreditLines summarizes margin collateral and limits.
@@ -1027,8 +1106,9 @@ type APIKeyInfo struct {
 // ===========================================================================
 
 // ListWalletAccountsService returns the wallet accounts linked to the
-// authenticated user. The returned account ids are what GetAccountBalanceService
-// and GetLedgersService accept via SetAccountID.
+// authenticated user. The returned account ids are what the account-data
+// services (Balance, BalanceEx, TradeBalance, orders, trades, positions, ledgers,
+// CreditLines) accept via SetAccountID.
 type ListWalletAccountsService struct {
 	c *Client
 }
