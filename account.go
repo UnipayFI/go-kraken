@@ -307,6 +307,9 @@ func (s *GetClosedOrdersService) SetEnd(end string) *GetClosedOrdersService {
 }
 
 // SetOffset sets the result offset for pagination.
+//
+// DEPRECATED since 2026-09-30: use SetWithCursor and SetCursor instead (ofs
+// must be absent or 0 with with_cursor).
 func (s *GetClosedOrdersService) SetOffset(ofs int) *GetClosedOrdersService {
 	s.params["ofs"] = formatInt(ofs)
 	return s
@@ -522,6 +525,9 @@ func (s *GetTradesHistoryService) SetEnd(end string) *GetTradesHistoryService {
 }
 
 // SetOffset sets the result offset for pagination.
+//
+// DEPRECATED since 2026-09-30: use SetWithCursor and SetCursor instead (ofs
+// must be absent or 0 with with_cursor).
 func (s *GetTradesHistoryService) SetOffset(ofs int) *GetTradesHistoryService {
 	s.params["ofs"] = formatInt(ofs)
 	return s
@@ -730,6 +736,9 @@ func (s *GetLedgersService) SetAsset(assets ...string) *GetLedgersService {
 }
 
 // SetAssetClass filters by asset class (default currency).
+//
+// DEPRECATED since 2026-09-30: Kraken now wants the list-of-{asset, aclass}
+// form of asset instead, which needs a JSON request body this SDK does not send.
 func (s *GetLedgersService) SetAssetClass(aclass string) *GetLedgersService {
 	s.params["aclass"] = aclass
 	return s
@@ -755,6 +764,8 @@ func (s *GetLedgersService) SetEnd(end string) *GetLedgersService {
 }
 
 // SetOffset sets the result offset for pagination.
+//
+// DEPRECATED since 2026-09-30: page with SetStart and SetEnd instead.
 func (s *GetLedgersService) SetOffset(ofs int) *GetLedgersService {
 	s.params["ofs"] = formatInt(ofs)
 	return s
@@ -792,6 +803,8 @@ func (c *Client) NewQueryLedgersService(ids ...string) *QueryLedgersService {
 }
 
 // SetTrades includes related trade info in the output.
+//
+// DEPRECATED since 2026-09-30: Kraken says not to rely on this parameter.
 func (s *QueryLedgersService) SetTrades(trades bool) *QueryLedgersService {
 	s.params["trades"] = formatBool(trades)
 	return s
