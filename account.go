@@ -143,32 +143,38 @@ type OrderDescription struct {
 
 // OrderInfo is the full state of an order, shared by OpenOrders, ClosedOrders
 // and QueryOrders. Optional fields (closetm, reason, margin, trigger,
-// sender_sub_id, trades) appear only in the relevant context.
+// sender_sub_id, trades, displayvol, link_id, reduce_only, ...) appear only in
+// the relevant context.
 type OrderInfo struct {
-	RefID          string           `json:"refid"`                // referral order tx id that created this order (nullable)
-	UserRef        int64            `json:"userref"`              // optional client identifier (nullable)
-	ClientOrderID  string           `json:"cl_ord_id"`            // optional alphanumeric client identifier (nullable)
-	Status         string           `json:"status"`               // pending, open, closed, canceled, expired
-	Reason         string           `json:"reason"`               // reason order was closed/canceled (nullable)
-	OpenTime       time.Time        `json:"opentm,format:unix"`   // time order was placed
-	StartTime      time.Time        `json:"starttm,format:unix"`  // order start time (0 if not set)
-	ExpireTime     time.Time        `json:"expiretm,format:unix"` // order end time (0 if not set)
-	CloseTime      time.Time        `json:"closetm,format:unix"`  // time order was closed (ClosedOrders/QueryOrders)
-	Description    OrderDescription `json:"descr"`                // order description
-	Volume         decimal.Decimal  `json:"vol"`                  // order volume (base currency)
-	VolumeExecuted decimal.Decimal  `json:"vol_exec"`             // volume executed (base currency)
-	Cost           decimal.Decimal  `json:"cost"`                 // total cost (quote currency)
-	Fee            decimal.Decimal  `json:"fee"`                  // total fee (quote currency)
-	Price          decimal.Decimal  `json:"price"`                // average price (quote currency)
-	StopPrice      decimal.Decimal  `json:"stopprice"`            // stop price (quote currency)
-	LimitPrice     decimal.Decimal  `json:"limitprice"`           // triggered limit price (quote currency)
-	Trigger        string           `json:"trigger"`              // price signal for stop/take-profit: last or index
-	Margin         bool             `json:"margin"`               // whether order is funded on margin
-	Misc           string           `json:"misc"`                 // comma-delimited misc info (stopped, touched, ...)
-	SenderSubID    string           `json:"sender_sub_id"`        // underlying sub-account for STP (nullable)
-	OrderFlags     string           `json:"oflags"`               // comma-delimited order flags (post, fcib, fciq, ...)
-	TimeInForce    string           `json:"time_in_force"`        // gtc, ioc, gtd, fok
-	Trades         []string         `json:"trades"`               // related trade ids (if requested and available)
+	RefID                  string           `json:"refid"`                // referral order tx id that created this order (nullable)
+	UserRef                int64            `json:"userref"`              // optional client identifier (nullable)
+	ClientOrderID          string           `json:"cl_ord_id"`            // optional alphanumeric client identifier (nullable)
+	Status                 string           `json:"status"`               // pending, open, closed, canceled, expired
+	Reason                 string           `json:"reason"`               // reason order was closed/canceled (nullable)
+	OpenTime               time.Time        `json:"opentm,format:unix"`   // time order was placed
+	StartTime              time.Time        `json:"starttm,format:unix"`  // order start time (0 if not set)
+	ExpireTime             time.Time        `json:"expiretm,format:unix"` // order end time (0 if not set)
+	CloseTime              time.Time        `json:"closetm,format:unix"`  // time order was closed (ClosedOrders/QueryOrders)
+	Description            OrderDescription `json:"descr"`                // order description
+	Volume                 decimal.Decimal  `json:"vol"`                  // order volume (base currency)
+	VolumeExecuted         decimal.Decimal  `json:"vol_exec"`             // volume executed (base currency)
+	Cost                   decimal.Decimal  `json:"cost"`                 // total cost (quote currency)
+	Fee                    decimal.Decimal  `json:"fee"`                  // total fee (quote currency)
+	Price                  decimal.Decimal  `json:"price"`                // average price (quote currency)
+	StopPrice              decimal.Decimal  `json:"stopprice"`            // stop price (quote currency)
+	LimitPrice             decimal.Decimal  `json:"limitprice"`           // triggered limit price (quote currency)
+	DisplayVolume          decimal.Decimal  `json:"displayvol"`           // iceberg visible quantity (base currency)
+	DisplayVolumeRemaining decimal.Decimal  `json:"displayvolremain"`     // iceberg visible quantity still in the book (base currency)
+	ExternalOrderID        string           `json:"ext_ord_id"`           // external order id
+	LinkID                 string           `json:"link_id"`              // original order id of an edited order
+	ReduceOnly             bool             `json:"reduce_only"`          // reduce-only order (only present if true)
+	Trigger                string           `json:"trigger"`              // price signal for stop/take-profit: last or index
+	Margin                 bool             `json:"margin"`               // whether order is funded on margin
+	Misc                   string           `json:"misc"`                 // comma-delimited misc info (stopped, touched, ...)
+	SenderSubID            string           `json:"sender_sub_id"`        // underlying sub-account for STP (nullable)
+	OrderFlags             string           `json:"oflags"`               // comma-delimited order flags (post, fcib, fciq, ...)
+	TimeInForce            string           `json:"time_in_force"`        // gtc, ioc, gtd, fok
+	Trades                 []string         `json:"trades"`               // related trade ids (if requested and available)
 }
 
 // PageCursor points at the next page of a cursor-paginated listing (requests
@@ -179,15 +185,16 @@ type PageCursor struct {
 
 // LedgerEntry is one ledger record.
 type LedgerEntry struct {
-	RefID      string          `json:"refid"`            // reference id
-	Time       time.Time       `json:"time,format:unix"` // time of ledger entry
-	Type       string          `json:"type"`             // deposit, withdrawal, trade, margin, rollover, ...
-	SubType    string          `json:"subtype"`          // additional info on the type
-	AssetClass string          `json:"aclass"`           // asset class
-	Asset      string          `json:"asset"`            // asset
-	Amount     decimal.Decimal `json:"amount"`           // transaction amount (signed)
-	Fee        decimal.Decimal `json:"fee"`              // transaction fee
-	Balance    decimal.Decimal `json:"balance"`          // resulting balance
+	RefID       string          `json:"refid"`            // reference id
+	Time        time.Time       `json:"time,format:unix"` // time of ledger entry
+	Type        string          `json:"type"`             // deposit, withdrawal, trade, margin, rollover, ...
+	SubType     string          `json:"subtype"`          // additional info on the type
+	AssetClass  string          `json:"aclass"`           // asset class
+	Asset       string          `json:"asset"`            // asset
+	Amount      decimal.Decimal `json:"amount"`           // transaction amount (signed)
+	Fee         decimal.Decimal `json:"fee"`              // transaction fee
+	Balance     decimal.Decimal `json:"balance"`          // resulting balance
+	AmountToken decimal.Decimal `json:"amount_token"`     // amount in the token's raw base units (QueryLedgers, tokenized assets only)
 }
 
 // ===========================================================================
@@ -489,6 +496,7 @@ type TradeHistoryEntry struct {
 	TradeID        int64           `json:"trade_id"`         // unique trade id
 	Maker          bool            `json:"maker"`            // true if maker, false if taker
 	AssetClass     string          `json:"aclass"`           // asset class of the traded pair
+	ExternalExecID string          `json:"ext_exec_id"`      // external execution id (if any)
 	TradeOrderType string          `json:"tradeordertype"`   // actual execution order type (may differ)
 	PositionStatus string          `json:"posstatus"`        // position status (only if trade opened a position)
 	ClosedPrice    decimal.Decimal `json:"cprice"`           // avg price of closed portion of position
