@@ -73,8 +73,10 @@ func (s *GetExtendedBalanceService) Do(ctx context.Context) (map[string]Extended
 
 // ExtendedBalance is one asset's total balance and the portion held for orders.
 type ExtendedBalance struct {
-	Balance   decimal.Decimal `json:"balance"`    // total balance of the asset
-	HoldTrade decimal.Decimal `json:"hold_trade"` // balance held for open orders/positions
+	Balance    decimal.Decimal `json:"balance"`     // total balance of the asset
+	Credit     decimal.Decimal `json:"credit"`      // total credit (only with a credit line)
+	CreditUsed decimal.Decimal `json:"credit_used"` // used credit (only with a credit line)
+	HoldTrade  decimal.Decimal `json:"hold_trade"`  // balance held for open orders/positions
 }
 
 // ===========================================================================
