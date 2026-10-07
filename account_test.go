@@ -294,6 +294,28 @@ func TestAccountData(t *testing.T) {
 		}
 		t.Logf("Ledgers: count=%d sample=%s", resp.Count, ledgerID)
 		pace()
+
+		// Cursor pagination (2026-10-06): walk two pages and check they don't overlap.
+		raw = apitest.FetchRawPost(t, c, ctx, "/0/private/Ledgers", map[string]string{"with_cursor": "true"})
+		page, err := c.NewGetLedgersService().SetWithCursor(true).Do(ctx)
+		if err != nil {
+			t.Fatalf("Ledgers(cursor): %v", err)
+		}
+		apitest.AssertCovers(t, "Ledgers(cursor)", raw, page)
+		pace()
+		if page.Cursor.Next != "" {
+			next, err := c.NewGetLedgersService().SetWithCursor(true).SetCursor(page.Cursor.Next).Do(ctx)
+			if err != nil {
+				t.Fatalf("Ledgers(cursor page 2): %v", err)
+			}
+			for id := range next.Ledger {
+				if _, dup := page.Ledger[id]; dup {
+					t.Errorf("Ledgers(cursor): %s on both pages", id)
+				}
+			}
+			pace()
+		}
+		t.Logf("Ledgers(cursor): %d entr(ies), next=%q", len(page.Ledger), page.Cursor.Next)
 	}
 
 	// 12. Query Ledgers.

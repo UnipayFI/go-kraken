@@ -822,7 +822,8 @@ func (s *GetLedgersService) SetEnd(end string) *GetLedgersService {
 
 // SetOffset sets the result offset for pagination.
 //
-// DEPRECATED since 2026-09-30: page with SetStart and SetEnd instead.
+// DEPRECATED since 2026-09-30: use SetWithCursor and SetCursor instead (ofs
+// must be absent or 0 with with_cursor).
 func (s *GetLedgersService) SetOffset(ofs int) *GetLedgersService {
 	s.params["ofs"] = formatInt(ofs)
 	return s
@@ -834,6 +835,21 @@ func (s *GetLedgersService) SetWithoutCount(withoutCount bool) *GetLedgersServic
 	return s
 }
 
+// SetWithCursor switches to cursor-based pagination: each page holds up to 50
+// entries (SetStart/SetEnd still narrow the range) and the response's
+// Cursor.Next is set while more remain.
+func (s *GetLedgersService) SetWithCursor(withCursor bool) *GetLedgersService {
+	s.params["with_cursor"] = formatBool(withCursor)
+	return s
+}
+
+// SetCursor continues from a previous page's Cursor.Next (requires
+// SetWithCursor(true)).
+func (s *GetLedgersService) SetCursor(cursor string) *GetLedgersService {
+	s.params["cursor"] = cursor
+	return s
+}
+
 func (s *GetLedgersService) Do(ctx context.Context) (*LedgersResult, error) {
 	return request.Do[LedgersResult](request.Post(ctx, s.c, "/0/private/Ledgers", s.params).WithSign())
 }
@@ -841,7 +857,8 @@ func (s *GetLedgersService) Do(ctx context.Context) (*LedgersResult, error) {
 // LedgersResult holds the ledger map plus the total count.
 type LedgersResult struct {
 	Ledger map[string]LedgerEntry `json:"ledger"`
-	Count  int                    `json:"count"`
+	Count  int                    `json:"count"`  // 0 with without_count or with_cursor
+	Cursor PageCursor             `json:"cursor"` // next page (with_cursor only)
 }
 
 // ===========================================================================
