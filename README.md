@@ -180,7 +180,7 @@ for structs with `format` tags, and `log/slog`'s JSON handler logs `!ERROR:...` 
 | Subaccounts | `subaccount.go` | CreateSubaccount, AccountTransfer (institutional) |
 | Earn | `earn.go` | Allocate, Deallocate, Allocate/Deallocate Status, Strategies, Allocations |
 | Transparency | `transparency.go` | PreTrade, PostTrade (MiFID pre/post-trade data) |
-| Affiliate | `affiliate.go` | DailyActivity (KOL referred-user activity; `/affiliate/v1`, no envelope) |
+| Affiliate | `affiliate.go` | DailyActivity, CPAProgress, PayoutHistory (KOL referred-user activity, CPA bounties, payouts; `/affiliate/v1`, no envelope) |
 | WebSocket auth | `websocket.go` | GetWebSocketsToken (REST) |
 | Shared types | `types.go` | order enums, `MethodLimit` |
 

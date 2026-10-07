@@ -10,13 +10,14 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Affiliate endpoints report referred-user activity for approved affiliate (KOL)
-// partners. Unlike the /0 spot API they sit directly on https://api.kraken.com
-// (no /0 prefix), are signed GETs (nonce in the API-Nonce header, query string
-// in the signed path) and return the object itself instead of the
-// {error, result} envelope; errors come back as *client.ProblemError. The key
-// needs permission to query referrals, and the caller must be the main referrer
-// on a live KOL plan (otherwise 403 ReferrerNotWhitelisted).
+// Affiliate endpoints report referred-user activity, CPA progress and payouts
+// for approved affiliate (KOL) partners. Unlike the /0 spot API they sit
+// directly on https://api.kraken.com (no /0 prefix), are signed GETs (nonce in
+// the API-Nonce header, query string in the signed path) and return the object
+// itself instead of the {error, result} envelope; errors come back as
+// *client.ProblemError. The key needs the "Query affiliate participants"
+// permission, and the caller must be the main referrer on a live KOL plan
+// (otherwise 403 ReferrerNotWhitelisted).
 
 // Affiliate product keys used in the open-ended Products / Totals maps. Unknown
 // keys may appear and should be ignored; an absent key means zero activity.
@@ -192,4 +193,147 @@ type OptedOutActivity struct {
 type OptedOutSummary struct {
 	ActiveParticipants int64                      `json:"active_participants"` // opted-out participants active that day
 	Products           map[string]ProductActivity `json:"products"`            // activity keyed by product
+}
+
+// ===========================================================================
+// 2. Get CPA Progress -- GET /affiliate/v1/cpa-progress
+// ===========================================================================
+
+// GetAffiliateCPAProgressService returns CPA bounty qualification progress for
+// one referred trader of the authenticated affiliate: each bounty with its
+// reward, status, requirements and completion percentage. Unknown IIBANs,
+// another affiliate's referrals and traders who opted out of activity sharing
+// are a 404; region-specific bounties that do not apply are omitted, so
+// Bounties can be empty.
+type GetAffiliateCPAProgressService struct {
+	c      *Client
+	params map[string]string
+}
+
+// NewGetAffiliateCPAProgressService queries one referred trader by the full
+// IIBAN returned by GetDailyActivityService (spaced or compact form).
+func (c *Client) NewGetAffiliateCPAProgressService(iiban string) *GetAffiliateCPAProgressService {
+	return &GetAffiliateCPAProgressService{c: c, params: map[string]string{"iiban": iiban}}
+}
+
+func (s *GetAffiliateCPAProgressService) Do(ctx context.Context) (*AffiliateCPAProgress, error) {
+	return request.DoBare[AffiliateCPAProgress](request.Get(ctx, s.c, "/affiliate/v1/cpa-progress", s.params).WithSign())
+}
+
+// AffiliateCPAProgress is the CPA qualification progress of one referred trader.
+type AffiliateCPAProgress struct {
+	Progress ReferralCPAProgress `json:"progress"`
+}
+
+// ReferralCPAProgress lists the bounties that can pay, or previously paid, for
+// one referral. Qualified and paid bounties stay visible.
+type ReferralCPAProgress struct {
+	Bounties []CPABountyProgress `json:"bounties"` // one entry per eligible bounty; absent when empty
+}
+
+// CPABountyProgress is one CPA bounty. A measurable requirement can sit at 100
+// percent while a non-numeric step (such as a hold period) is still incomplete.
+type CPABountyProgress struct {
+	BountyPosition       int                    `json:"bounty_position"`             // zero-based position in the plan (absent means 0); can change when the plan changes
+	Description          string                 `json:"description"`                 // customer-facing description, when configured
+	RewardAmount         decimal.Decimal        `json:"reward_amount"`               // amount payable to you: an estimate until a payment record exists, then the recorded amount
+	RewardAsset          string                 `json:"reward_asset"`                // asset the reward is or will be paid in
+	Status               string                 `json:"status"`                      // in_progress, qualified_payment_pending, paid, expired, no_longer_eligible, not_tracked (open vocabulary)
+	QualifiedAt          time.Time              `json:"qualified_at,format:RFC3339"` // when every requirement was completed
+	ProgressAvailability string                 `json:"progress_availability"`       // available, unavailable (open vocabulary); measurements may be omitted when unavailable
+	Conditions           []CPAConditionProgress `json:"conditions"`                  // requirements; absent when empty
+}
+
+// CPAConditionProgress is one requirement of a CPA bounty.
+type CPAConditionProgress struct {
+	Label       string                   `json:"label"`       // customer-facing requirement label
+	Kind        string                   `json:"kind"`        // amount, count, verification, binary (open vocabulary)
+	State       string                   `json:"state"`       // incomplete, complete (open vocabulary)
+	Measurement *CPAConditionMeasurement `json:"measurement"` // measurable requirements only, when progress is available
+}
+
+// CPAConditionMeasurement is the measured progress of a requirement.
+type CPAConditionMeasurement struct {
+	Current    decimal.Decimal `json:"current"`    // current value, capped between zero and Target
+	Target     decimal.Decimal `json:"target"`     // value required to complete the threshold
+	Unit       string          `json:"unit"`       // asset code for monetary or volume requirements; absent for counts
+	Percentage decimal.Decimal `json:"percentage"` // progress from 0 to 100
+}
+
+// ===========================================================================
+// 3. Get Payout History -- GET /affiliate/v1/payout-history
+// ===========================================================================
+
+// GetAffiliatePayoutHistoryService returns one page of the authenticated
+// affiliate's payouts, newest first: RevShare, Prop, CPA and Futures
+// Accelerator Bonus rows (retainer, sub-affiliate carve-out and remediation
+// payments are not included). Page with SetCursor(resp.NextCursor) while
+// NextCursor is non-empty.
+type GetAffiliatePayoutHistoryService struct {
+	c      *Client
+	params map[string]string
+}
+
+func (c *Client) NewGetAffiliatePayoutHistoryService() *GetAffiliatePayoutHistoryService {
+	return &GetAffiliatePayoutHistoryService{c: c, params: map[string]string{}}
+}
+
+// SetCursor continues from a previous page's NextCursor (omit for the newest
+// payouts).
+func (s *GetAffiliatePayoutHistoryService) SetCursor(cursor string) *GetAffiliatePayoutHistoryService {
+	s.params["cursor"] = cursor
+	return s
+}
+
+// SetLimit sets the page size (1-200, default 50).
+func (s *GetAffiliatePayoutHistoryService) SetLimit(limit int) *GetAffiliatePayoutHistoryService {
+	s.params["limit"] = strconv.Itoa(limit)
+	return s
+}
+
+func (s *GetAffiliatePayoutHistoryService) Do(ctx context.Context) (*AffiliatePayoutHistory, error) {
+	return request.DoBare[AffiliatePayoutHistory](request.Get(ctx, s.c, "/affiliate/v1/payout-history", s.params).WithSign())
+}
+
+// AffiliatePayoutHistory is one page of affiliate payouts plus whole-history
+// totals. Totals add the configured payout assets (expected to be USD-pegged)
+// and count only rows whose status is paid or pending.
+type AffiliatePayoutHistory struct {
+	Items      []AffiliatePayout      `json:"items"`       // payouts on this page; absent when empty
+	NextCursor string                 `json:"next_cursor"` // present when more results exist; pass to SetCursor
+	Summary    AffiliatePayoutSummary `json:"summary"`     // totals over the whole history, not just this page
+	Limit      int                    `json:"limit"`       // page size used for this response
+}
+
+// AffiliatePayout is one payout row.
+type AffiliatePayout struct {
+	PayoutID       string          `json:"payout_id"`                 // opaque payout reference
+	Amount         decimal.Decimal `json:"amount"`                    // exact payout amount
+	Asset          string          `json:"asset"`                     // asset the payout was or will be paid in
+	Status         string          `json:"status"`                    // pending, paid, action_needed, on_hold, refunded, cancelled (open vocabulary)
+	CreatedAt      time.Time       `json:"created_at,format:RFC3339"` // when the payout record was created
+	Source         string          `json:"source"`                    // revshare, prop, cpa, futures_accelerator_bonus (open vocabulary)
+	PropPurchaseID string          `json:"prop_purchase_id"`          // opaque Prop purchase reference; Prop commissions only
+}
+
+// AffiliatePayoutSummary totals the whole payout history by status.
+type AffiliatePayoutSummary struct {
+	Paid    decimal.Decimal   `json:"paid"`    // sum of payouts with status paid
+	Pending decimal.Decimal   `json:"pending"` // sum of payouts with status pending
+	Prop    PropPayoutSummary `json:"prop"`    // Prop commissions only
+	CPA     CPAPayoutSummary  `json:"cpa"`     // CPA bounties only
+}
+
+// PropPayoutSummary totals Prop commissions.
+type PropPayoutSummary struct {
+	Paid       decimal.Decimal `json:"paid"`        // sum of Prop commissions with status paid
+	Pending    decimal.Decimal `json:"pending"`     // sum of Prop commissions with status pending
+	OrderCount int64           `json:"order_count"` // distinct Prop orders with status paid or pending
+}
+
+// CPAPayoutSummary totals CPA bounties.
+type CPAPayoutSummary struct {
+	Paid        decimal.Decimal `json:"paid"`         // sum of CPA bounties with status paid
+	Pending     decimal.Decimal `json:"pending"`      // sum of CPA bounties with status pending
+	BountyCount int64           `json:"bounty_count"` // CPA bounties with status paid or pending
 }
