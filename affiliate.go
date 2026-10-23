@@ -265,10 +265,10 @@ type CPAConditionMeasurement struct {
 // ===========================================================================
 
 // GetAffiliatePayoutHistoryService returns one page of the authenticated
-// affiliate's payouts, newest first: RevShare, Prop, CPA and Futures
-// Accelerator Bonus rows (retainer, sub-affiliate carve-out and remediation
-// payments are not included). Page with SetCursor(resp.NextCursor) while
-// NextCursor is non-empty.
+// affiliate's payouts, newest first: RevShare, Prop, CPA, Futures Accelerator
+// Bonus, sub-affiliate commission, retainer and remediation rows (retainer and
+// remediation rows appear only after approval). Page with
+// SetCursor(resp.NextCursor) while NextCursor is non-empty.
 type GetAffiliatePayoutHistoryService struct {
 	c      *Client
 	params map[string]string
@@ -312,11 +312,12 @@ type AffiliatePayout struct {
 	Asset          string          `json:"asset"`                     // asset the payout was or will be paid in
 	Status         string          `json:"status"`                    // pending, paid, action_needed, on_hold, refunded, cancelled (open vocabulary)
 	CreatedAt      time.Time       `json:"created_at,format:RFC3339"` // when the payout record was created
-	Source         string          `json:"source"`                    // revshare, prop, cpa, futures_accelerator_bonus (open vocabulary)
+	Source         string          `json:"source"`                    // revshare, prop, cpa, futures_accelerator_bonus, sub_affiliate, retainer, remediation (open vocabulary)
 	PropPurchaseID string          `json:"prop_purchase_id"`          // opaque Prop purchase reference; Prop commissions only
 }
 
-// AffiliatePayoutSummary totals the whole payout history by status.
+// AffiliatePayoutSummary totals the whole payout history by status, across all
+// payout sources.
 type AffiliatePayoutSummary struct {
 	Paid    decimal.Decimal   `json:"paid"`    // sum of payouts with status paid
 	Pending decimal.Decimal   `json:"pending"` // sum of payouts with status pending
