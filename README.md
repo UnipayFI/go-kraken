@@ -176,6 +176,7 @@ for structs with `format` tags, and `log/slog`'s JSON handler logs `!ERROR:...` 
 | Market data | `market.go` | Time, SystemStatus, Assets, AssetPairs, Ticker, OHLC, Depth (order book), Trades, Spread, GroupedBook, Level3 (authenticated) |
 | Account data | `account.go` | Balance, BalanceEx, TradeBalance, Open/Closed/Query Orders, OrderAmends, Trades History, Query Trades, Open Positions, Ledgers, Query Ledgers, Trade Volume, export reports (Add/Status/Retrieve/Remove), CreditLines, GetApiKeyInfo, ListWalletAccounts |
 | Trading | `trade.go` | AddOrder, AddOrderBatch, AmendOrder, EditOrder, CancelOrder, CancelAll, CancelAllOrdersAfter, CancelOrderBatch |
+| Algo trading | `algo.go` | AddStrategy, CancelStrategy, Open/Query/Closed Strategies (TWAP) |
 | Funding | `funding.go` | Deposit Methods/Addresses/Status, Withdraw Methods/Addresses/Info, Withdraw, Withdraw Status/Cancel, WalletTransfer |
 | Subaccounts | `subaccount.go` | CreateSubaccount, AccountTransfer (institutional) |
 | Earn | `earn.go` | Allocate, Deallocate, Allocate/Deallocate Status, Strategies, Allocations |
