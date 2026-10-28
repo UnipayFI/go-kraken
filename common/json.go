@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	jsonexp "github.com/go-json-experiment/json"
 	"github.com/shopspring/decimal"
 )
 
@@ -35,6 +34,15 @@ var (
 	// provides the `format` tag hooks this codec relies on.
 	errJSONSupport = initJSON()
 )
+
+// supportFormatTag enables the experimental `format` tag support of Go 1.27's
+// encoding/json/v2. The standard library recognises any option that has an
+// ExperimentalSupportFormatTag method, and embedding json.Options supplies the
+// rest of the option method set, the same way
+// github.com/go-json-experiment/json implements ExperimentalSupportFormatTag.
+type supportFormatTag struct{ json.Options }
+
+func (supportFormatTag) ExperimentalSupportFormatTag() bool { return true }
 
 // JSONMarshal marshals v with Kraken's time and decimal conventions applied.
 func JSONMarshal(v any) ([]byte, error) {
@@ -66,7 +74,7 @@ func initJSON() (err error) {
 	if errFormatOf != nil {
 		return errFormatOf
 	}
-	formatTag := jsonexp.ExperimentalSupportFormatTag(true)
+	formatTag := supportFormatTag{}
 	if err := findFormatTagBit(formatTag); err != nil {
 		return err
 	}

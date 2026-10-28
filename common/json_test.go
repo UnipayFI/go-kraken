@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	jsonexp "github.com/go-json-experiment/json"
 	"github.com/shopspring/decimal"
 )
 
@@ -76,7 +75,7 @@ func TestUnixFormats(t *testing.T) {
 // standard `format` option (same instant, same UTC location), whether Kraken
 // sends them quoted or bare.
 func TestUnixMatchesStandard(t *testing.T) {
-	std := jsonexp.ExperimentalSupportFormatTag(true)
+	std := supportFormatTag{}
 	compared := 0
 	defer func() {
 		if compared < 40 {
@@ -111,7 +110,7 @@ func TestUnixMatchesStandard(t *testing.T) {
 // TestRFC3339MatchesStandard checks that RFC 3339 strings decode exactly like
 // the standard RFC3339/RFC3339Nano formats, including the extra grammar checks.
 func TestRFC3339MatchesStandard(t *testing.T) {
-	std := jsonexp.ExperimentalSupportFormatTag(true)
+	std := supportFormatTag{}
 	compared := 0
 	for _, format := range []string{"RFC3339", "RFC3339Nano"} {
 		for _, s := range []string{
@@ -536,7 +535,7 @@ func (s stamps) MarshalJSONTo(enc *jsontext.Encoder) error {
 // value does not inherit that format — the standard library clears the
 // FormatTag flag (but not Format) on entering an array or object.
 func TestFormatNotInherited(t *testing.T) {
-	std := jsonexp.ExperimentalSupportFormatTag(true)
+	std := supportFormatTag{}
 	type inner struct {
 		Plain time.Time `json:"plain"`
 		U     time.Time `json:"u,format:unix"`
