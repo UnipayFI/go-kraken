@@ -445,7 +445,10 @@ func (s *WithdrawCancelService) Do(ctx context.Context) (bool, error) {
 // ===========================================================================
 
 // WalletTransferService transfers funds from the Kraken Spot wallet to the
-// Kraken Futures wallet. (Reverse transfers use the Futures API.)
+// Kraken Futures wallet. Reverse transfers use the Futures API: since
+// 12 November 2026 its POST /transfer accepts "spot" as fromAccount/toAccount;
+// the older Futures POST /withdrawal is deprecated and removed on
+// 30 November 2026.
 type WalletTransferService struct {
 	c      *Client
 	params map[string]string
